@@ -1,0 +1,21 @@
+# Virtual environment
+venv/
+.env
+*.pyc
+__pycache__/
+
+# Django
+*.log
+db.sqlite3
+media/
+staticfiles/
+
+# VS Code / editor
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
