@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Personal Movie Watch List</title>
+    <style>
+        body { font-family: system-ui, sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
+        h1 { margin-bottom: 0.5rem; }
+        .movie { border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+        .movie h2 { margin: 0 0 0.5rem 0; }
+        .year { color: #666; font-size: 0.9rem; }
+        .overview { margin-top: 0.5rem; }
+        .empty { color: #888; font-style: italic; }
+    </style>
+</head>
+<body>
+    <h1>Personal Movie Watch List</h1>
+    <p>Movies currently in the database:</p>
+
+    {% if movies %}
+        {% for movie in movies %}
+            <div class="movie">
+                <h2>{{ movie.title }}</h2>
+                {% if movie.release_year %}
+                    <div class="year">{{ movie.release_year }}</div>
+                {% endif %}
+                {% if movie.overview %}
+                    <div class="overview">{{ movie.overview }}</div>
+                {% endif %}
+            </div>
+        {% endfor %}
+    {% else %}
+        <p class="empty">No movies in the database yet. Add some using the Django shell or admin.</p>
+    {% endif %}
+</body>
+</html>

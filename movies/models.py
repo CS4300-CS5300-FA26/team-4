@@ -1,6 +1,8 @@
 from django.db import models
 
-# Create your models here for the movies app. 
+
+
+
 # This model represents a movie in the personal movie watchlist application. 
 # It includes fields for the title, overview, release year, poster URL, TMDB ID, and 
 # the date the movie was added to the watchlist. 
