@@ -9,7 +9,7 @@ Django walking skeleton for CS 4300/5300 Sprint 0-3.
 - Katie Navarre
 - Bernadette Williamson
 - Samson Lemma
-- Eleasia A
+- Eleasia Allen
 
 ## How to run locally
 
