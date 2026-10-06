@@ -6,10 +6,10 @@ Django walking skeleton for CS 4300/5300 Sprint 0-3.
 
 ## Team 4
 - Danny Cruz
-- Teammate 2
-- Teammate 3
-- Teammate 4
-- Teammate 5
+- Katie Navarre
+- Bernadette Williamson
+- Samson Lemma
+- Eleasia Allen
 
 ## How to run locally
 
@@ -32,4 +32,4 @@ Django walking skeleton for CS 4300/5300 Sprint 0-3.
 ## AI Use
 
 AI was used to create diagrams (Sprint 0-2).
-AI assited in README.md, Django app templates (Sprint 0-3).
+AI assisted in README.md, Django app templates, and configuring Django for Render deployment (Sprint 0-3).
