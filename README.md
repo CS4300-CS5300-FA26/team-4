@@ -6,10 +6,10 @@ Django walking skeleton for CS 4300/5300 Sprint 0-3.
 
 ## Team 4
 - Danny Cruz
-- Teammate 2
-- Teammate 3
-- Teammate 4
-- Teammate 5
+- Katie Navarre
+- Bernadette Williamson
+- Samson Lemma
+- Eleasia A
 
 ## How to run locally
 
