@@ -32,4 +32,4 @@ Django walking skeleton for CS 4300/5300 Sprint 0-3.
 ## AI Use
 
 AI was used to create diagrams (Sprint 0-2).
-AI assisted in README.md, Django app templates, and configuring Django for Render deployment (Sprint 0-3).
+AI assisted in README.md, Django app templates, configuring Django for Render deployment, and for movie details (Sprint 0-3).
