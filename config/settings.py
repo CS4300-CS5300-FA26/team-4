@@ -44,6 +44,13 @@ render_hostname = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
 if render_hostname:
     ALLOWED_HOSTS.append(render_hostname)
 
+# lets us run locally
+extra_hosts = os.environ.get("EXTRA_ALLOWED_HOSTS")
+if extra_hosts:
+    ALLOWED_HOSTS.extend(
+        host.strip() for host in extra_hosts.split(",") if host.strip()
+    )
+
 
 # Application definition
 
@@ -98,6 +105,8 @@ if ON_RENDER:
             conn_max_age=600,
         )
     }
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = True
 else:
     DATABASES = {
         "default": {
