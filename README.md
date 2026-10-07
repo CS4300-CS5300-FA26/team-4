@@ -5,6 +5,7 @@ CS 4300/5300 Fall 2026 - Team 4 group project
 Django walking skeleton for CS 4300/5300 Sprint 0-3.
 
 ## Team 4
+
 - Danny Cruz
 - Katie Navarre
 - Bernadette Williamson
@@ -13,24 +14,67 @@ Django walking skeleton for CS 4300/5300 Sprint 0-3.
 
 ## How to run locally
 
-1. Clone the repository
-2. Create and activate a virtual environment:
-   ```bash
-   python -m venv venv
-   ```
+1. Clone the repository.
 
-   # Windows
-   venv\Scripts\activate
+2. Create a virtual environment:
 
-   # macOS/Linux
-   source venv/bin/activate
+```bash
+python -m venv venv
+```
 
-3. Install requirements
+3. Activate the virtual environment.
 
-    pip install -r requirements.txt
+### Windows
+
+```bash
+venv\Scripts\activate
+```
+
+### macOS/Linux
+
+```bash
+source venv/bin/activate
+```
+
+4. Install requirements:
+
+```bash
+pip install -r requirements.txt
+```
+
+5. Apply database migrations:
+
+```bash
+python manage.py migrate
+```
+
+6. Load the sample movie data:
+
+```bash
+python manage.py loaddata movies/fixtures/movies.json
+```
+
+7. Start the development server:
+
+```bash
+python manage.py runserver
+```
+
+Then open:
+
+```text
+http://127.0.0.1:8000/
+```
+
+8. Run the automated tests:
+
+```bash
+python manage.py test
+```
 
 ## AI Use
 AI Tools: Pardot (Claude), ChatGPT
 
 AI was used to create diagrams (Sprint 0-2).
-AI assisted in README.md, Django app templates, configuring Django for Render deployment, and for movie details (Sprint 0-3).
+
+AI assisted in README.md, Django app templates, configuring Django for Render deployment, and generating movie recommendations with brief descriptions (Sprint 0-3).
