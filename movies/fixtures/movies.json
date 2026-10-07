@@ -1,0 +1,24 @@
+[
+  {
+    "model": "movies.movie",
+    "pk": 1,
+    "fields": {
+      "title": "The Matrix",
+      "overview": "A computer hacker discovers the truth about reality.",
+      "release_year": 1999,
+      "poster_url": "",
+      "tmdb_id": 603
+    }
+  },
+  {
+    "model": "movies.movie",
+    "pk": 2,
+    "fields": {
+      "title": "Inception",
+      "overview": "A skilled thief enters people's dreams to steal secrets.",
+      "release_year": 2010,
+      "poster_url": "",
+      "tmdb_id": 27205
+    }
+  }
+]
