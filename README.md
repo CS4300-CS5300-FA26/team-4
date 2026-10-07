@@ -30,6 +30,6 @@ Django walking skeleton for CS 4300/5300 Sprint 0-3.
     pip install -r requirements.txt
 
 ## AI Use
-
+AI Tools: Pardot (Claude), ChatGPT
 AI was used to create diagrams (Sprint 0-2).
 AI assisted in README.md, Django app templates, configuring Django for Render deployment, and for movie details (Sprint 0-3).
