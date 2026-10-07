@@ -22,5 +22,125 @@
       "tmdb_id": 27205,
       "created_at": "2026-10-06T00:00:00Z"
     }
+  },
+  {
+    "model": "movies.movie",
+    "pk": 3,
+    "fields": {
+      "title": "Interstellar",
+      "overview": "A group of explorers travels through space in search of a new home for humanity.",
+      "release_year": 2014,
+      "poster_url": "",
+      "tmdb_id": 157336,
+      "created_at": "2026-10-06T00:00:00Z"
+    }
+  },
+  {
+    "model": "movies.movie",
+    "pk": 4,
+    "fields": {
+      "title": "The Dark Knight",
+      "overview": "Batman faces a dangerous criminal who brings chaos to Gotham City.",
+      "release_year": 2008,
+      "poster_url": "",
+      "tmdb_id": 155,
+      "created_at": "2026-10-06T00:00:00Z"
+    }
+  },
+  {
+    "model": "movies.movie",
+    "pk": 5,
+    "fields": {
+      "title": "Toy Story",
+      "overview": "A group of toys comes to life when their owner is not around.",
+      "release_year": 1995,
+      "poster_url": "",
+      "tmdb_id": 862,
+      "created_at": "2026-10-06T00:00:00Z"
+    }
+  },
+  {
+    "model": "movies.movie",
+    "pk": 6,
+    "fields": {
+      "title": "The Lord of the Rings: The Fellowship of the Ring",
+      "overview": "A young hobbit begins a dangerous journey to destroy a powerful ring.",
+      "release_year": 2001,
+      "poster_url": "",
+      "tmdb_id": 120,
+      "created_at": "2026-10-06T00:00:00Z"
+    }
+  },
+  {
+    "model": "movies.movie",
+    "pk": 7,
+    "fields": {
+      "title": "Jurassic Park",
+      "overview": "Visitors to a theme park filled with cloned dinosaurs struggle to survive when the creatures escape.",
+      "release_year": 1993,
+      "poster_url": "",
+      "tmdb_id": 329,
+      "created_at": "2026-10-06T00:00:00Z"
+    }
+  },
+  {
+    "model": "movies.movie",
+    "pk": 8,
+    "fields": {
+      "title": "The Shawshank Redemption",
+      "overview": "A man serving a prison sentence forms a lasting friendship while maintaining hope for his future.",
+      "release_year": 1994,
+      "poster_url": "",
+      "tmdb_id": 278,
+      "created_at": "2026-10-06T00:00:00Z"
+    }
+  },
+  {
+    "model": "movies.movie",
+    "pk": 9,
+    "fields": {
+      "title": "Spirited Away",
+      "overview": "A young girl enters a mysterious spirit world and searches for a way to save her parents.",
+      "release_year": 2001,
+      "poster_url": "",
+      "tmdb_id": 129,
+      "created_at": "2026-10-06T00:00:00Z"
+    }
+  },
+  {
+    "model": "movies.movie",
+    "pk": 10,
+    "fields": {
+      "title": "Back to the Future",
+      "overview": "A teenager accidentally travels into the past and must find a way to return home.",
+      "release_year": 1985,
+      "poster_url": "",
+      "tmdb_id": 105,
+      "created_at": "2026-10-06T00:00:00Z"
+    }
+  },
+  {
+    "model": "movies.movie",
+    "pk": 11,
+    "fields": {
+      "title": "Parasite",
+      "overview": "A struggling family gradually becomes involved in the lives of a wealthy household.",
+      "release_year": 2019,
+      "poster_url": "",
+      "tmdb_id": 496243,
+      "created_at": "2026-10-06T00:00:00Z"
+    }
+  },
+  {
+    "model": "movies.movie",
+    "pk": 12,
+    "fields": {
+      "title": "Everything Everywhere All at Once",
+      "overview": "A woman becomes caught in an adventure involving alternate versions of her life across multiple universes.",
+      "release_year": 2022,
+      "poster_url": "",
+      "tmdb_id": 545611,
+      "created_at": "2026-10-06T00:00:00Z"
+    }
   }
 ]
