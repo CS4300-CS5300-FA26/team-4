@@ -29,14 +29,21 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
-ON_RENDER = os.environ.get("RENDER") == "true"
+ON_AZURE = bool(os.environ.get("WEBSITE_HOSTNAME"))
+IN_PRODUCTION = ON_RENDER or ON_AZURE
 
-if ON_RENDER:
+if IN_PRODUCTION:
     SECRET_KEY = os.environ["SECRET_KEY"]
 else:
-    SECRET_KEY = os.environ.get("SECRET_KEY", "local-development-only-key")
+    SECRET_KEY = os.environ.get(
+        "SECRET_KEY",
+        "local-development-only-key",
+    )
 
-DEBUG = not ON_RENDER
+DEBUG = not IN_PRODUCTION
+
+CSRF_COOKIE_SECURE = IN_PRODUCTION
+SESSION_COOKIE_SECURE = IN_PRODUCTION
 
 ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
 
