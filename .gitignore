@@ -19,3 +19,13 @@ staticfiles/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Additional local environments and secrets
+.venv/
+.env.*
+!.env.example
+*.PublishSettings
+*.publishsettings
+
+# Deployment package
+app.zip
