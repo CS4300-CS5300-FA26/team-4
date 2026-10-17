@@ -47,7 +47,10 @@ DEBUG = not IN_PRODUCTION
 CSRF_COOKIE_SECURE = IN_PRODUCTION
 SESSION_COOKIE_SECURE = IN_PRODUCTION
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "movie-watchlist-ccejbcbpdmb2frd0.northcentralus-01.azurewebsites.net"]
+ALLOWED_HOSTS = ["localhost", "127.0.0.1",]
+azure_hostname = os.environ.get("WEBSITE_HOSTNAME")
+if azure_hostname:
+    ALLOWED_HOSTS.append(azure_hostname)
 
 render_hostname = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
 if render_hostname:
