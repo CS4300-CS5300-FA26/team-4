@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'movies',# add movies app
+    'behave_django',  # add behave-django app
 ]
 
 MIDDLEWARE = [

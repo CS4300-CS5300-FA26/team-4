@@ -1,0 +1,131 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: ["**"] #run on all branches for push events
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  test-and-coverage:
+    name: Run Tests & Coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11.9'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Pytest & Report Coverage to Console
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings
+          SECRET_KEY: ci-test-key-12345 #mock secret key for testing
+        run: |
+          pytest
+          coverage report -m
+
+      - name: Run Behave BDD Scenarios
+        if: ${{ hashFiles('features/**/*.feature') != '' }} #only run if there are feature files present 
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings
+          SECRET_KEY: ci-test-key-12345 #mock secret key for testing
+        run: |
+          python manage.py behave
+
+  openai-code-review:
+    name: OpenAI Code Review
+    needs: test-and-coverage
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11.9'
+
+      - name: Install Review Script Dependencies
+        run: pip install openai requests
+
+      - name: Run AI Code Review
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }} #openai api key stored in github secrets
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO_FULL_NAME: ${{ github.repository }}
+        run: |
+          python - << 'EOF'
+          import os
+          import subprocess
+          import requests
+          from openai import OpenAI
+
+          api_key = os.environ.get("OPENAI_API_KEY")
+          github_token = os.environ.get("GITHUB_TOKEN")
+          pr_number = os.environ.get("PR_NUMBER")
+          repo = os.environ.get("REPO_FULL_NAME")
+
+          if not api_key:
+              print("Missing OPENAI_API_KEY. Skipping AI review.")
+              exit(0)
+
+          # Extract the PR diff
+          diff_cmd = ["git", "diff", "origin/main...HEAD"]
+          diff_output = subprocess.check_output(diff_cmd).decode("utf-8")
+
+          if not diff_output.strip():
+              print("No diff detected.")
+              exit(0)
+
+          # Truncate diff if necessary to fit context window
+          truncated_diff = diff_output[:12000]
+
+          client = OpenAI(api_key=api_key)
+          prompt = (
+              "You are an expert automated code reviewer for a Django SaaS application. "
+              "Review the following Git diff for code quality, architectural security, "
+              "and potential defects. Provide concise, constructive feedback.\n\n"
+              f"```diff\n{truncated_diff}\n```"
+          )
+
+          response = client.chat.completions.create(
+              model="gpt-4o-mini",
+              messages=[{"role": "user", "content": prompt}],
+              temperature=0.2,
+          )
+
+          review_comment = response.choices[0].message.content
+
+          # Post feedback as a comment on the GitHub PR
+          url = f"https://api.github.com/repos/{repo}/issues/{pr_number}/comments"
+          headers = {
+              "Authorization": f"token {github_token}",
+              "Accept": "application/vnd.github.v3+json",
+          }
+          data = {"body": f"### 🤖 AI Code Review (OpenAI Platform)\n\n{review_comment}"}
+          res = requests.post(url, headers=headers, json=data)
+
+          if res.status_code == 201:
+              print("AI review posted successfully.")
+          else:
+              print(f"Failed to post PR comment: {res.status_code} - {res.text}")
+          EOF
