@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 import os
 import dj_database_url
+from psycopg2.extensions import parse_dsn
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -30,15 +31,26 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 ON_RENDER = os.environ.get("RENDER") == "true"
+ON_AZURE = bool(os.environ.get("WEBSITE_HOSTNAME"))
+IN_PRODUCTION = ON_RENDER or ON_AZURE
 
-if ON_RENDER:
+if IN_PRODUCTION:
     SECRET_KEY = os.environ["SECRET_KEY"]
 else:
-    SECRET_KEY = os.environ.get("SECRET_KEY", "local-development-only-key")
+    SECRET_KEY = os.environ.get(
+        "SECRET_KEY",
+        "local-development-only-key",
+    )
 
-DEBUG = not ON_RENDER
+DEBUG = not IN_PRODUCTION
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+CSRF_COOKIE_SECURE = IN_PRODUCTION
+SESSION_COOKIE_SECURE = IN_PRODUCTION
+
+ALLOWED_HOSTS = ["localhost", "127.0.0.1",]
+azure_hostname = os.environ.get("WEBSITE_HOSTNAME")
+if azure_hostname:
+    ALLOWED_HOSTS.append(azure_hostname)
 
 render_hostname = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
 if render_hostname:
@@ -99,15 +111,30 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-if ON_RENDER:
+if ON_AZURE:
+    connection = parse_dsn(
+        os.environ["AZURE_POSTGRESQL_CONNECTIONSTRING"]
+    )
+
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": connection.pop("dbname"),
+            "HOST": connection.pop("host"),
+            "PORT": connection.pop("port", "5432"),
+            "USER": connection.pop("user"),
+            "PASSWORD": connection.pop("password", ""),
+            "CONN_MAX_AGE": 600,
+            "OPTIONS": connection,
+        }
+    }
+elif ON_RENDER:
     DATABASES = {
         "default": dj_database_url.parse(
             os.environ["DATABASE_URL"],
             conn_max_age=600,
         )
     }
-    CSRF_COOKIE_SECURE = True
-    SESSION_COOKIE_SECURE = True
 else:
     DATABASES = {
         "default": {
