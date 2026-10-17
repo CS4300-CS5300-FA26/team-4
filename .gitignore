@@ -29,3 +29,6 @@ Thumbs.db
 
 # Deployment package
 app.zip
+#coverage
+.coverage
+.coverage.*
