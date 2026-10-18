@@ -1,0 +1,86 @@
+```html
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>{{ movie.title }} | Personal Movie Watch List</title>
+
+    <link rel="stylesheet" href="{% static 'movies/movie_detail.css' %}">
+</head>
+
+<body>
+    <header class="page-header">
+        <h1>Personal Movie Watch List</h1>
+    </header>
+
+    <main class="container">
+        <a href="{% url 'movie_list' %}" class="back-link">
+            &larr; Back to Movies
+        </a>
+
+        <article class="movie-card">
+            <div class="poster">
+                {% if movie.poster_url %}
+                    <img src="{{ movie.poster_url }}" alt="Poster for {{ movie.title }}">
+                {% else %}
+                    <p>Movie poster unavailable</p>
+                {% endif %}
+            </div>
+
+            <section class="movie-info">
+                <h2>{{ movie.title }}</h2>
+
+                {% if movie.release_year %}
+                    <p class="release-year">
+                        Released in {{ movie.release_year }}
+                    </p>
+                {% endif %}
+
+                {% if movie.rating %}
+                    <p class="rating">Rating: {{ movie.rating }}</p>
+                {% endif %}
+
+                <h3 class="section-heading">Overview</h3>
+
+                {% if movie.overview %}
+                    <p class="overview">{{ movie.overview }}</p>
+                {% else %}
+                    <p class="overview">No overview available.</p>
+                {% endif %}
+
+                <h3 class="section-heading">Genres</h3>
+
+                {% if movie.genres %}
+                    <p>{{ movie.genres|join:", " }}</p>
+                {% else %}
+                    <p>Genres unavailable.</p>
+                {% endif %}
+
+                <h3 class="section-heading">Cast</h3>
+
+                {% if movie.cast %}
+                    <p>{{ movie.cast|join:", " }}</p>
+                {% else %}
+                    <p>Cast information unavailable.</p>
+                {% endif %}
+
+                <h3 class="section-heading">Where to Watch</h3>
+
+                {% if movie.where_to_watch %}
+                    <p>{{ movie.where_to_watch }}</p>
+                {% else %}
+                    <p>Streaming information unavailable.</p>
+                {% endif %}
+
+                <a href="{% url 'movie_list' %}" class="back-button">
+                    Back to Movie List
+                </a>
+            </section>
+        </article>
+    </main>
+</body>
+</html>
+```
