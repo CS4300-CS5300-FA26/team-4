@@ -23,7 +23,10 @@ def step_impl(context):
     # Verify the user exists in the database
     user_exists = User.objects.filter(username='newuser').exists()
     context.test.assertTrue(user_exists)
-    
+
+    # Verify the new user is authenticated in the session
+    context.test.assertTrue(context.response.context['user'].is_authenticated)
+
     # Verify redirection to home page
     context.test.assertRedirects(context.response, reverse('home'))
 
