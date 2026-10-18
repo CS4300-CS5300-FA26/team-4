@@ -73,8 +73,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'movies',# add movies app
-    'behave_django',  # add behave-django app
+    'movies',
+    'accounts',
+    'behave_django',
 ]
 
 MIDDLEWARE = [
@@ -194,3 +195,7 @@ STORAGES = {
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Tells Django's built-in LoginView where to redirect upon success
+LOGIN_REDIRECT_URL = 'home'
+LOGOUT_REDIRECT_URL = 'login'
