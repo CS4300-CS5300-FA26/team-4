@@ -14,6 +14,8 @@ from pathlib import Path
 import os
 import dj_database_url
 from psycopg2.extensions import parse_dsn
+from dotenv import load_dotenv
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -33,6 +35,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 ON_RENDER = os.environ.get("RENDER") == "true"
 ON_AZURE = bool(os.environ.get("WEBSITE_HOSTNAME"))
 IN_PRODUCTION = ON_RENDER or ON_AZURE
+TMDB_API_KEY = os.environ.get("TMDB_API_KEY", "")
+
 
 if IN_PRODUCTION:
     SECRET_KEY = os.environ["SECRET_KEY"]
@@ -47,7 +51,7 @@ DEBUG = not IN_PRODUCTION
 CSRF_COOKIE_SECURE = IN_PRODUCTION
 SESSION_COOKIE_SECURE = IN_PRODUCTION
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1",]
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", ".devedu.io",]
 azure_hostname = os.environ.get("WEBSITE_HOSTNAME")
 if azure_hostname:
     ALLOWED_HOSTS.append(azure_hostname)
