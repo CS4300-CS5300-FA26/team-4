@@ -46,11 +46,15 @@ DEBUG = not IN_PRODUCTION
 
 CSRF_COOKIE_SECURE = IN_PRODUCTION
 SESSION_COOKIE_SECURE = IN_PRODUCTION
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 ALLOWED_HOSTS = ["localhost", "127.0.0.1",]
 azure_hostname = os.environ.get("WEBSITE_HOSTNAME")
 if azure_hostname:
     ALLOWED_HOSTS.append(azure_hostname)
+CSRF_TRUSTED_ORIGINS = (
+    [f"https://{azure_hostname}"] if azure_hostname else []
+)
 
 render_hostname = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
 if render_hostname:
