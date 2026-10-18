@@ -38,7 +38,7 @@
                     </p>
                 {% endif %}
 
-                {% if movie.rating %}
+                {% if movie.rating =! None %}
                     <p class="rating">Rating: {{ movie.rating }}</p>
                 {% endif %}
 
