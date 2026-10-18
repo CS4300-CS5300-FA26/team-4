@@ -32,4 +32,3 @@ def build_movie_context(data):
         "rating": round(rating, 1) if rating is not None else None,
         "where_to_watch": [],   #will fill in later
     }
-    return render(request, "movie/movie_detail.html", {"movie": movie})

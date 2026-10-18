@@ -1,9 +1,12 @@
 import requests
+import logging
 from django.shortcuts import render
 from django.http import Http404
 
 from .models import Movie
 from .services import fetch_movie, build_movie_context
+
+logger = logging.getLogger(__name__)
 
 # Query all movies from the database and render them in the movie_list.html template.
 def movie_list(request):
@@ -14,10 +17,10 @@ def movie_list(request):
 def movie_detail(request, tmdb_id):
     try:
         data = fetch_movie(tmdb_id)
-    except requests.HTTPError as error:
-        if error.response is not None and error.response.status_code == 404:
-            raise Http404("Title not found on TMDB.")
-        return render(request, 'movies/movie_detail.html', {'error': True}, status=502)
+    except RuntimeError:
+        #Configuration problem, not a TMDB outage
+        logger.error("TMDB_API_KEY is not configured; cannot load movie %s", tmdb_id)
+        return render(request, 'movies/movie_detail.html', {'error': True}, status=503)
     except requests.RequestException:
         # Network problem, timeout, etc
         return render(request, 'movies/movie_detail.html', {'error': True}, status=502)

@@ -88,3 +88,10 @@ class MovieDetailViewTest(TestCase):
         response = self.client.get(reverse("movie_detail", args=[27205]))
         self.assertEqual(response.status_code, 502)
         self.assertContains(response, "We couldn't reach the movie database", status_code=502)
+
+    @override_settings(TMDB_API_KEY="")
+    def test_missing_key_error_page_not_a_crash(self):
+        with self.assertLogs("movies.views", level="ERROR"):
+            response = self.client.get(reverse("movie_detail", args=[27205]))
+        self.assertEqual(response.status_code, 503)
+        self.assertContains(response, "unavailable", status_code=503)
