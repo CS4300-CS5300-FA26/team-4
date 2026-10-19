@@ -33,9 +33,13 @@
         {% for movie in movies %}
             <div class="movie">
                 <h2>
-                    <a href="{% url 'movie_detail' movie.tmdb_id %}">
-                    {{ movie.title }}
-                    </a>
+                    {% if movie.tmdb_id %}
+                        <a href="{% url 'movie_detail' movie.tmdb_id %}">
+                            {{ movie.title }}
+                        </a>
+                    {% else %}
+                        {{ movie.title }}
+                    {% endif %}
                 </h2>
                 {% if movie.release_year %}
                     <div class="year">{{ movie.release_year }}</div>
