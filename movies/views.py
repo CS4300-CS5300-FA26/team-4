@@ -21,7 +21,16 @@ def movie_detail(request, tmdb_id):
         #Configuration problem, not a TMDB outage
         logger.error("TMDB_API_KEY is not configured; cannot load movie %s", tmdb_id)
         return render(request, 'movies/movie_detail.html', {'error': True}, status=503)
+    except requests.HTTPError as exc:
+        status = exc.response.status_code if exc.response is not None else None
+        if status == 404:
+            raise Http404("That movie was not found on TMDB.")
+        if status in (401, 403):
+            logger.error("TMDB rejected the API key (HTTP %s)", status)
+            return render(request, 'movies/movie_detail.html', {'error': True}, status=503)
+        return render(request, 'movies/movie_detail.html', {'error': True}, status=502)
     except requests.RequestException:
         # Network problem, timeout, etc
         return render(request, 'movies/movie_detail.html', {'error': True}, status=502)
+   
     return render(request, 'movies/movie_detail.html', {'movie': build_movie_context(data)})

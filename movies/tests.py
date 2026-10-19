@@ -95,3 +95,33 @@ class MovieDetailViewTest(TestCase):
             response = self.client.get(reverse("movie_detail", args=[27205]))
         self.assertEqual(response.status_code, 503)
         self.assertContains(response, "unavailable", status_code=503)
+
+    @patch("movies.views.fetch_movie", side_effect=requests.HTTPError(response=Mock(status_code=404)))
+    def test_unknown_movie_returns_404(self, mock_fetch):
+        response = self.client.get(reverse("movie_detail", args=[1]))
+        self.assertEqual(response.status_code, 404)
+
+    @patch("movies.views.fetch_movie", side_effect=requests.HTTPError(response=Mock(status_code=401)))
+    def test_rejected_api_key_is_a_configuration_error(self, mock_fetch):
+        with self.assertLogs("movies.views", level="ERROR"):
+            response = self.client.get(reverse("movie_detail", args=[27205]))
+        self.assertEqual(response.status_code, 503)
+
+    @patch("movies.views.fetch_movie", side_effect=requests.HTTPError(response=Mock(status_code=500)))
+    def test_tmdb_server_error_is_a_502(self, mock_fetch):
+        response = self.client.get(reverse("movie_detail", args=[27205]))
+        self.assertEqual(response.status_code, 502)
+
+    @patch("movies.views.fetch_movie", return_value={
+        "title": "Odd Movie", "genres": None,
+        "credits": {"cast": [None, "oops", {"name": None}, {"name": "Real Actor"}]}})
+    def test_odd_tmdb_data_does_not_crash_the_page(self, mock_fetch):
+        response = self.client.get(reverse("movie_detail", args=[5]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Real Actor")
+
+class BuildMovieContextTest(TestCase):
+    def test_missing_or_wrong_shaped_fields_become_empty_lists(self):
+        context = build_movie_context({"genres": "Action", "credits": None})
+        self.assertEqual(context["genres"], [])
+        self.assertEqual(context["cast"], [])
