@@ -83,7 +83,7 @@
                 {% if user.is_authenticated and saved_movie %}
                     <form id="watchlist-form"
                           method="post"
-                          action="{% url 'add_to_watchlist' saved_movie.pk %}">
+                          action="{% url 'add_to_watchlist' saved_movie.pk %}"
                           data-login-url="{% url 'login' %}"> 
                         {% csrf_token %}
                         <button type="submit">Add to Watchlist</button>
