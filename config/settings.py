@@ -46,8 +46,12 @@ DEBUG = not IN_PRODUCTION
 
 CSRF_COOKIE_SECURE = IN_PRODUCTION
 SESSION_COOKIE_SECURE = IN_PRODUCTION
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-
+if ON_AZURE:
+    SECURE_PROXY_SSL_HEADER = (
+        "HTTP_X_FORWARDED_PROTO",
+        "https",
+    )
+    
 ALLOWED_HOSTS = ["localhost", "127.0.0.1",]
 azure_hostname = os.environ.get("WEBSITE_HOSTNAME")
 if azure_hostname:
