@@ -1,31 +1,28 @@
 # SD-1: Account Management – Register and Login
 
-# User Story
-
-Feature: Account registration and login
+Feature: Registration and Login (User Story SD-1)
   As a new user
   I want to register and log in
   So that I can securely use the application
 
-# Gherkin Scenarios (might need to modify to match github)
+# Gherkin Scenarios
 
-  Scenario: Register a new account
+  Scenario: User Registration Happy Path
     Given I am on the registration page
-    When I register with a valid email and password
-    Then my account should be created
-    And I should be logged in
+    When I submit a valid username, email, and password
+    Then a new account is created and I am taken to the home page
+
+  Scenario: User Login Happy Path
+    Given I have an existing account
+    And I am on the login page
+    When I submit my correct credentials
+    Then I am logged in and see my personalized home page
 
   Scenario: Prevent duplicate account registration
     Given an account already exists with my email
     When I register using the same email
     Then I should see an error message
     And the duplicate account should not be created
-
-  Scenario: Log in with valid credentials
-    Given I have an existing account
-    When I log in with the correct email and password
-    Then I should be logged in
-    And I should have access to my personal watchlist
 
   Scenario: Reject invalid login credentials
     Given I have an existing account
