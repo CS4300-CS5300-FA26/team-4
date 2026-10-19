@@ -82,8 +82,8 @@
                         <button type="submit">Add to Watchlist</button>
                     </form>
 
-    <p id="watchlist-message" role="status"></p>
-{% endif %}
+                    <p id="watchlist-message" role="status"></p>
+                {% endif %}
                 
                 <a href="{% url 'movie_list' %}" class="back-button">
                     Back to Movie List
@@ -91,5 +91,6 @@
             </section>
         </article>
     </main>
+    <script src="{% static 'movies/watchlist.js' %}"></script>
 </body>
 </html>
