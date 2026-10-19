@@ -8,4 +8,9 @@ urlpatterns = [
         views.add_to_watchlist,
         name='add_to_watchlist'
     ),
+    path(
+        'movies/<int:tmdb_id>/',
+        views.movie_detail,
+        name='movie_detail'
+    ),
 ]

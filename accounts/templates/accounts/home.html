@@ -1,0 +1,10 @@
+<h2>Home</h2>
+{% if user.is_authenticated %}
+  <p>Welcome to your personalized dashboard, {{ user.username }}!</p>
+  <form method="post" action="{% url 'logout' %}">
+    {% csrf_token %}
+    <button type="submit">Logout</button>
+  </form>
+{% else %}
+  <p>Please <a href="{% url 'login' %}">log in</a>.</p>
+{% endif %}
