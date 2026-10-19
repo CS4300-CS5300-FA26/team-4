@@ -20,7 +20,7 @@ if (form) {
                 }
             });
 
-            if (response.redirected || response.status === 401) {
+            if (response.status === 401) {
                 message.textContent =
                     "Please log in again before adding this movie.";
                 return;
