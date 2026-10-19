@@ -21,11 +21,11 @@ Feature: Registration and Login (User Story SD-1)
   Scenario: Prevent duplicate account registration
     Given an account already exists with my email
     When I register using the same email
-    Then I should see an error message
+    Then I should see a duplicate email error
     And the duplicate account should not be created
 
   Scenario: Reject invalid login credentials
     Given I have an existing account
     When I log in with an incorrect password
-    Then I should see an error message
+    Then I should see an invalid login error
     And I should not be logged in

@@ -10,6 +10,14 @@ class CustomRegistrationForm(UserCreationForm):
         model = User
         fields = UserCreationForm.Meta.fields + ('email',)
 
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+
+        if User.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError(
+                "An account with this email already exists."
+            )
+
     def clean(self):
         cleaned_data = super().clean()
         password1 = cleaned_data.get("password1")
