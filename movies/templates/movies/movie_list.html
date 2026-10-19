@@ -13,22 +13,20 @@
         .empty { color: #888; font-style: italic; }
     </style>
 </head>
-
-<nav>
-    {% if user.is_authenticated %}
-        <a href="{% url 'watchlist' %}" class="back-button">
-            My Watchlist
-        </a>
-    {% else %}
-        <a href="{% url 'login' %}">Log in</a> |
-        <a href="{% url 'register' %}">Register</a>
-    {% endif %}
-</nav>
     
 <body>
     <h1>Personal Movie Watch List</h1>
     <p>Movies currently in the database:</p>
 
+    <nav>
+        {% if user.is_authenticated %}
+            <a href="{% url 'watchlist' %}" class="back-button">My Watchlist</a>
+        {% else %}
+            <a href="{% url 'login' %}">Log in</a> |
+            <a href="{% url 'register' %}">Register</a>
+        {% endif %}
+    </nav>
+    
     {% if movies %}
         {% for movie in movies %}
             <div class="movie">
