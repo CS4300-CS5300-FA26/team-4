@@ -84,7 +84,7 @@ class WatchlistTest(TestCase):
             reverse("add_to_watchlist", args=[self.movie.id])
         )
 
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, 401)
 
     def test_watchlist_rejects_get_request(self):
         response = self.client.get(
@@ -92,3 +92,4 @@ class WatchlistTest(TestCase):
         )
 
         self.assertEqual(response.status_code, 405)
+        self.assertEqual(response["Allow"], "POST")

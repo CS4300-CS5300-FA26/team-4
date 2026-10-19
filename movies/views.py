@@ -1,5 +1,4 @@
-from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, render
 
 from .models import Movie, WatchlistItem
@@ -11,13 +10,15 @@ def movie_list(request):
     return render(request, 'movies/movie_list.html', {'movies': movies})
 
 
-@login_required
 def add_to_watchlist(request, movie_id):
-    if request.method != 'POST':
+    if not request.user.is_authenticated:
         return JsonResponse(
-            {'error': 'POST request required.'},
-            status=405
+            {'error': 'Authentication required.'},
+            status=401
         )
+
+    if request.method != 'POST':
+        return HttpResponseNotAllowed(['POST'])
 
     movie = get_object_or_404(Movie, id=movie_id)
 
