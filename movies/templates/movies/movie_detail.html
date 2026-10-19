@@ -74,6 +74,17 @@
                     <p>Streaming information unavailable.</p>
                 {% endif %}
 
+                {% if user.is_authenticated and saved_movie %}
+                    <form id="watchlist-form"
+                          method="post"
+                          action="{% url 'add_to_watchlist' saved_movie.pk %}">
+                        {% csrf_token %}
+                        <button type="submit">Add to Watchlist</button>
+                    </form>
+
+    <p id="watchlist-message" role="status"></p>
+{% endif %}
+                
                 <a href="{% url 'movie_list' %}" class="back-button">
                     Back to Movie List
                 </a>
