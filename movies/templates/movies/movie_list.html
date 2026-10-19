@@ -13,6 +13,12 @@
         .empty { color: #888; font-style: italic; }
     </style>
 </head>
+
+<nav>
+    <a href="{% url 'login' %}">Log in</a> |
+    <a href="{% url 'register' %}">Register</a>
+</nav>
+    
 <body>
     <h1>Personal Movie Watch List</h1>
     <p>Movies currently in the database:</p>
