@@ -1,13 +1,11 @@
 # SD-9: Title Details
 
-# User Story
-
-Feature: Movie details
+Feature: Movie details (User Story SD-9)
   As a logged-in user
   I want to view full details for a movie or show
   So that I can make an informed decision
 
-# Gherkin Scenarios (might need to modify to match github)
+# Gherkin Scenarios
 
   Scenario: View complete movie details
     Given I am logged in
