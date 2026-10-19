@@ -15,8 +15,14 @@
 </head>
 
 <nav>
-    <a href="{% url 'login' %}">Log in</a> |
-    <a href="{% url 'register' %}">Register</a>
+    {% if user.is_authenticated %}
+        <a href="{% url 'watchlist' %}" class="back-button">
+            My Watchlist
+        </a>
+    {% else %}
+        <a href="{% url 'login' %}">Log in</a> |
+        <a href="{% url 'register' %}">Register</a>
+    {% endif %}
 </nav>
     
 <body>
