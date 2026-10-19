@@ -20,7 +20,18 @@ if (form) {
                 }
             });
 
-            if (response.status === 401) {
+            const loginUrl = new URL(
+                form.dataset.loginUrl,
+                window.location.href
+            );
+            const finalUrl = new URL(response.url);
+
+            const redirectedToLogin =
+                response.redirected &&
+                finalUrl.origin === loginUrl.origin &&
+                finalUrl.pathname === loginUrl.pathname;
+
+            if (response.status === 401 || redirectedToLogin) {
                 message.textContent =
                     "Please log in again before adding this movie.";
                 return;
