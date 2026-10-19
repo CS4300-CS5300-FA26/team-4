@@ -20,6 +20,12 @@
             &larr; Back to Movies
         </a>
 
+        {% if error %}
+            <section class="error-message">
+                <h2>Details are unavailable right now</h2>
+                <p>We couldn't reach the movie database. Please try again in a moment.</p>
+            </section>
+        {% else %}
         <article class="movie-card">
             <div class="poster">
                 {% if movie.poster_url %}
@@ -90,6 +96,7 @@
                 </a>
             </section>
         </article>
+        {% endif %}
     </main>
     <script src="{% static 'movies/watchlist.js' %}"></script>
 </body>

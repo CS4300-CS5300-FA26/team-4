@@ -54,7 +54,14 @@ python manage.py migrate
 python manage.py loaddata movies/fixtures/movies.json
 ```
 
-7. Start the development server:
+7. Create a `.env` file in the project root (the same folder as `manage.py`) and add your TMDB API key (see [TMDB API key](#tmdb-api-key) below):
+```text
+TMDB_API_KEY=your_key_here
+```
+ 
+The file must be named exactly `.env` (a dot, then `env`, no `.txt`). Do not use quotes or spaces around the `=`. This file is listed in `.gitignore` and must never be committed.
+
+8. Start the development server:
 
 ```bash
 python manage.py runserver
@@ -66,7 +73,7 @@ Then open:
 http://127.0.0.1:8000/
 ```
 
-8. Run the automated tests:
+9. Run the automated tests:
 
 ```bash
 python manage.py test
