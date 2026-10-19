@@ -1,13 +1,11 @@
 # SD-3: Watchlist & History Management -- Add Watchlist
 
-# User Story
-
-Feature: Personal watchlist
+Feature: Personal watchlist (User Story SD-3)
   As a logged-in user
   I want to add titles to my watchlist
   So that I can track what I want to watch
 
-# Gherkin Scenarios (might need to modify to match github)
+# Gherkin Scenarios
 
   Scenario: Add a title to my watchlist
     Given I am logged in
