@@ -80,6 +80,18 @@
                     <p>Streaming information unavailable.</p>
                 {% endif %}
 
+                {% if user.is_authenticated and saved_movie %}
+                    <form id="watchlist-form"
+                          method="post"
+                          action="{% url 'add_to_watchlist' saved_movie.pk %}"
+                          data-login-url="{% url 'login' %}"> 
+                        {% csrf_token %}
+                        <button type="submit">Add to Watchlist</button>
+                    </form>
+
+                    <p id="watchlist-message" role="status"></p>
+                {% endif %}
+                
                 <a href="{% url 'movie_list' %}" class="back-button">
                     Back to Movie List
                 </a>
@@ -87,8 +99,13 @@
         </article>
         {% endif %}
     </main>
+
     <footer class="tmdb-attribution">
-        <p>This product uses the TMDB API but is not endorsed or certified by TMDB.</p>
+        <p>
+            This product uses the TMDB API but is not endorsed or certified by TMDB.
+        </p>
     </footer>
+    
+    <script src="{% static 'movies/watchlist.js' %}"></script>
 </body>
 </html>
