@@ -14,13 +14,13 @@ class RegisterView(CreateView):
 
     def form_valid(self, form):
         try:
-        with transaction.atomic():
-            self.object = form.save()
+            with transaction.atomic():
+                self.object = form.save()
         except IntegrityError:
-        form.add_error(
-            'email',
-            "An account with this email already exists."
-        )
+            form.add_error(
+                'email',
+                "An account with this email already exists."
+            )
         
         return self.form_invalid(form)
 
