@@ -94,8 +94,13 @@ def movie_detail(request, tmdb_id):
             status=502
         )
 
+    saved_movie = Movie.objects.filter(tmdb_id=tmdb_id).first()
+
     return render(
         request,
         'movies/movie_detail.html',
-        {'movie': build_movie_context(data)}
+        {
+            'movie': build_movie_context(data),
+            'saved_movie': saved_movie,
+        }
     )
