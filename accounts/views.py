@@ -20,9 +20,8 @@ class RegisterView(CreateView):
             form.add_error(
                 'email',
                 "An account with this email already exists."
-            )
-        
-        return self.form_invalid(form)
+            )        
+            return self.form_invalid(form)
 
         authenticated_user = authenticate(
             request=self.request,
