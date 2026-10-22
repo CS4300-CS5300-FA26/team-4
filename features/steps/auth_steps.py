@@ -70,10 +70,6 @@ def step_impl(context):
 # --- Duplicate Registration ---
 @given('an account already exists with my email')
 def step_existing_email(context):
-    User.objects.filter(
-        username__in=['duplicateuser', 'anotheruser']
-    ).delete() # only delete during testing
-
     context.user = User.objects.create_user(
         username='duplicateuser',
         email='duplicate@example.com',
