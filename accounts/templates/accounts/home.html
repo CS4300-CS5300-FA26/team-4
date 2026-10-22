@@ -7,11 +7,32 @@
     <button type="submit">Browse Movies</button>
   </form>
 
+    <ul>
+        {% for item in watchlist_items %}
+            <li>
+                {% if item.movie.tmdb_id %}
+                    <a href="{% url 'movie_detail' item.movie.tmdb_id %}">
+                        {{ item.movie.title }}
+                    </a>
+                {% else %}
+                    {{ item.movie.title }}
+                {% endif %}
+
+                {% if item.movie.release_year %}
+                    ({{ item.movie.release_year }})
+                {% endif %}
+            </li>
+        {% empty %}
+            <li>Your watchlist is empty. Browse movies to add one!</li>
+        {% endfor %}
+    </ul>
+
 <!-- this is a button to log out -->
   <form method="post" action="{% url 'logout' %}">
     {% csrf_token %}
     <button type="submit">Logout</button>
   </form>
+
 {% else %}
   <p>Please <a href="{% url 'login' %}">log in</a>.</p>
 {% endif %}
