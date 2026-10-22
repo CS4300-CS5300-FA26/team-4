@@ -64,3 +64,5 @@ def step_see_ratings_and_streaming(context):
         context.response,
         'Streaming information unavailable.'
     )
+
+# --- Add a movie from its details page ---
