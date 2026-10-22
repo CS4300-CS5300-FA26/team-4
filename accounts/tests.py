@@ -95,3 +95,25 @@ class HomeWatchlistTest(TestCase):
             response,
             "Your watchlist is empty"
         )
+
+# check that the email is saved in database
+class RegistrationEmailTests(TestCase):
+    def test_registration_saves_submitted_email(self):
+        email = "persist@example.com"
+
+        response = self.client.post(
+            reverse("register"),
+            {
+                "username": "persistuser",
+                "email": email,
+                "password1": "StrongTestPassword2026!",
+                "password2": "StrongTestPassword2026!",
+            },
+        )
+        
+        self.assertEqual(response.status_code, 302)
+
+        User = get_user_model()
+        user = User.objects.get(username="persistuser")
+        
+        self.assertEqual(user.email, email)

@@ -17,6 +17,7 @@ class CustomRegistrationForm(UserCreationForm):
             raise forms.ValidationError(
                 "An account with this email already exists."
             )
+        return email
 
     def clean(self):
         cleaned_data = super().clean()
