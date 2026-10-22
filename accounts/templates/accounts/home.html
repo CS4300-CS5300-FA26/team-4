@@ -1,6 +1,13 @@
 <h2>Home</h2>
 {% if user.is_authenticated %}
   <p>Welcome to your personalized dashboard, {{ user.username }}!</p>
+
+<!-- this is the button that lets you get to the movie list page - for now -->
+  <form method="get" action="{% url 'movie_list' %}">
+    <button type="submit">Browse Movies</button>
+  </form>
+
+<!-- this is a button to log out -->
   <form method="post" action="{% url 'logout' %}">
     {% csrf_token %}
     <button type="submit">Logout</button>
