@@ -117,3 +117,42 @@ class RegistrationEmailTests(TestCase):
         user = User.objects.get(username="persistuser")
         
         self.assertEqual(user.email, email)
+
+class AccountAuthTests(TestCase):
+    def test_register_view_creates_user_and_logs_in(self):
+        response = self.client.post(
+            reverse('register'),
+            {
+                'username': 'newuser',
+                'email': 'newuser@example.com',
+                'password1': 'SecurePassword123!',
+                'password2': 'SecurePassword123!',
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(get_user_model().objects.filter(username='newuser').exists())
+        self.assertTrue(response.context['user'].is_authenticated)
+        self.assertRedirects(response, reverse('home'))
+
+    def test_login_view_authenticates_existing_user(self):
+        get_user_model().objects.create_user(
+            username='existinguser',
+            email='user@example.com',
+            password='ValidPassword123!',
+        )
+
+        response = self.client.post(
+            reverse('login'),
+            {
+                'username': 'existinguser',
+                'password': 'ValidPassword123!',
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['user'].is_authenticated)
+        self.assertRedirects(response, reverse('home'))
+        self.assertEqual(response.wsgi_request.user.username, 'existinguser')
