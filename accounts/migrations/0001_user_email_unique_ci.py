@@ -1,4 +1,9 @@
+from django.conf import settings
 from django.db import migrations
+
+
+INDEX_NAME = "unique_auth_user_email_ci"
+
 
 def create_email_index(apps, schema_editor):
     connection = schema_editor.connection
@@ -9,6 +14,14 @@ def create_email_index(apps, schema_editor):
             "Case-insensitive email uniqueness requires SQLite "
             "or PostgreSQL. The current database backend is "
             f"{connection.vendor!r}."
+        )
+
+    # This migration specifically targets Django's default User model.
+    if settings.AUTH_USER_MODEL != "auth.User":
+        raise RuntimeError(
+            "This migration supports Django's default auth.User model "
+            "only. A custom AUTH_USER_MODEL requires a separate "
+            "migration targeting its database table."
         )
 
     # Check for conflicting email addresses before creating the index.
@@ -23,18 +36,20 @@ def create_email_index(apps, schema_editor):
         duplicates = cursor.fetchall()
 
     if duplicates:
-        details = ", ".join(
-            f"{email!r} ({count} accounts)"
-            for email, count in duplicates
-        )
+        duplicate_groups = len(duplicates)
+        affected_accounts = sum(count for _, count in duplicates)
+
         raise RuntimeError(
             "Cannot create the case-insensitive email index because "
-            "duplicate email addresses already exist. Resolve these "
-            f"conflicts and rerun the migration: {details}"
+            f"{duplicate_groups} duplicate email group(s) involving "
+            f"{affected_accounts} accounts were found. "
+            "Resolve the conflicts using a secure, authorized database "
+            "investigation, then rerun the migration. Email addresses "
+            "are intentionally omitted from this error message."
         )
 
-    schema_editor.execute("""
-        CREATE UNIQUE INDEX unique_auth_user_email_ci
+    schema_editor.execute(f"""
+        CREATE UNIQUE INDEX {INDEX_NAME}
         ON auth_user (LOWER(email))
         WHERE email <> ''
     """)
@@ -45,7 +60,7 @@ def drop_email_index(apps, schema_editor):
         return
 
     schema_editor.execute(
-        "DROP INDEX IF EXISTS unique_auth_user_email_ci"
+        f"DROP INDEX IF EXISTS {INDEX_NAME}"
     )
 
 
