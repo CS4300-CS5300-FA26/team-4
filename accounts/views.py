@@ -16,11 +16,24 @@ class RegisterView(CreateView):
         try:
             with transaction.atomic():
                 self.object = form.save()
-        except IntegrityError:
+        except IntegrityError as exc: # store error in exc
+            cause = getattr(exc, '__cause__', None)
+            diag = getattr(cause, 'diag', None)
+            constraint_name = getattr(diag, 'constraint_name', None)
+
+            # check if the cause for the error was a duplicate email
+            is_duplicate_email = (
+                constraint_name == 'unique_auth_user_email_ci'
+                or 'unique_auth_user_email_ci' in str(exc)
+            )
+
+            if not is_duplicate_email:
+                raise # raise the actual error
+
             form.add_error(
                 'email',
                 "An account with this email already exists."
-            )        
+            )
             return self.form_invalid(form)
 
         authenticated_user = authenticate(

@@ -93,7 +93,11 @@ def step_register_duplicate(context):
 
 @then('I should see a duplicate email error')
 def step_duplicate_email_error(context):
-    form = context.response.context.get('form')
+    form = (
+        context.response.context['form']
+        if context.response.context and 'form' in context.response.context
+        else None
+    )
 
     context.test.assertIsNotNone(
         form,
@@ -136,7 +140,11 @@ def step_incorrect_password(context):
 @then('I should see an invalid login error')
 def step_invalid_login_error(context):
     # Make sure the login page returned a form.
-    form = context.response.context.get('form')
+    form = (
+        context.response.context['form']
+        if context.response.context and 'form' in context.response.context
+        else None
+    )
 
     context.test.assertIsNotNone(
         form,
