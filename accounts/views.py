@@ -3,6 +3,7 @@ from django.views.generic import CreateView, TemplateView
 from django.contrib.auth import authenticate, login
 from django.http import HttpResponseRedirect
 from .forms import CustomRegistrationForm
+from movies.models import WatchlistItem
 
 
 class RegisterView(CreateView):
@@ -26,3 +27,19 @@ class RegisterView(CreateView):
 
 class HomeView(TemplateView):
     template_name = 'accounts/home.html'
+
+    # this will request the movie watchlist data to be displayed on the homepage
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        if self.request.user.is_authenticated:
+            context['watchlist_items'] = (
+                WatchlistItem.objects
+                .filter(user=self.request.user)
+                .select_related('movie')
+                .order_by('-added_at')
+            )
+        else:
+            context['watchlist_items'] = WatchlistItem.objects.none()
+
+        return context
