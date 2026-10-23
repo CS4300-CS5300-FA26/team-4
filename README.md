@@ -14,7 +14,7 @@ Django walking skeleton for CS 4300/5300 Sprint 0-3.
 
 ## Production Deployment
 
-# Production URL: https://movie-watchlist-ccejbcbpdmb2frd0.northcentralus-01.azurewebsites.net/
+### Production URL: [Movie Watchlist URL](https://movie-watchlist-ccejbcbpdmb2frd0.northcentralus-01.azurewebsites.net/)
 
 ## How to run locally
 
