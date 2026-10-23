@@ -25,6 +25,12 @@ FAKE_TMDB = {
             {"name": "Elliot Page"}
         ]
     },
+    "watch/providers": {"results": {
+        "US": {"flatrate": [{"provider_name": "Netflix"},
+        {"provider_name": "Max"}],
+        "rent": [{"provider_name": "Apple TV"}]},
+        "FR": {"flatrate": [{"provider_name": "Canal+"}]},
+    }},
 }
 
 
@@ -150,6 +156,7 @@ class FetchMovieTest(TestCase):
             "credits",
             kwargs["params"]["append_to_response"]
         )
+        self.assertIn("watch/providers", kwargs["params"]["append_to_response"])
 
     @override_settings(TMDB_API_KEY="")
     @patch("movies.services.requests.get")
@@ -195,6 +202,8 @@ class MovieDetailViewTest(TestCase):
             response,
             "not endorsed or certified by TMDB"
         )
+        self.assertContains(response, "Netflix, Max")
+        self.assertContains(response, "JustWatch")
 
         mock_fetch.assert_called_once_with(27205)
 
@@ -312,3 +321,12 @@ class BuildMovieContextTest(TestCase):
 
         self.assertEqual(context["genres"], [])
         self.assertEqual(context["cast"], [])
+    
+    def test_only_subscription_services_for_our_region_are_listed(self):
+        context = build_movie_context(FAKE_TMDB)
+        self.assertEqual(context["where_to_watch"], ["Netflix", "Max"])
+        
+    def test_missing_or_odd_provider_data_gives_an_empty_list(self):
+        for odd in (None, "x", {}, {"results": None}, {"results": "oops"}, {"results": {"US": None}},
+        {"results": {"US": {"flatrate": None}}} ):
+            self.assertEqual(build_movie_context({"watch/providers": odd})["where_to_watch"], [])
