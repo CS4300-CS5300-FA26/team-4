@@ -4,7 +4,7 @@ from django.conf import settings
 TMDB_BASE = "https://api.themoviedb.org/3"
 POSTER_BASE = "https://image.tmdb.org/t/p/w500"
 CAST_LIMIT = 10
-WATCH_REGION = 'US' #TMDB groups streaming data by country code. 
+WATCH_REGION = 'US' #Steaming availability differs by country. We only show US results for now 
 
 #Ask TMDB for one movie and return the raw anser
 def fetch_movie(tmdb_id):

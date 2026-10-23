@@ -202,6 +202,7 @@ class MovieDetailViewTest(TestCase):
             response,
             "not endorsed or certified by TMDB"
         )
+        self.assertContains(response, "Where to Watch (US)")
         self.assertContains(response, "Netflix, Max")
         self.assertContains(response, "JustWatch")
 
