@@ -4,6 +4,7 @@ from django.contrib.auth import authenticate, login
 from django.http import HttpResponseRedirect
 from .forms import CustomRegistrationForm
 from movies.models import WatchlistItem
+from django.db import IntegrityError, transaction
 
 
 class RegisterView(CreateView):
@@ -12,7 +13,29 @@ class RegisterView(CreateView):
     success_url = reverse_lazy('home')
 
     def form_valid(self, form):
-        self.object = form.save()
+        try:
+            with transaction.atomic():
+                self.object = form.save()
+        except IntegrityError as exc: # store error in exc
+            cause = getattr(exc, '__cause__', None)
+            diag = getattr(cause, 'diag', None)
+            constraint_name = getattr(diag, 'constraint_name', None)
+
+            # check if the cause for the error was a duplicate email
+            is_duplicate_email = (
+                constraint_name == 'unique_auth_user_email_ci'
+                or 'unique_auth_user_email_ci' in str(exc)
+            )
+
+            if not is_duplicate_email:
+                raise # raise the actual error
+
+            form.add_error(
+                'email',
+                "An account with this email already exists."
+            )
+            return self.form_invalid(form)
+
         authenticated_user = authenticate(
             request=self.request,
             username=self.object.username,
