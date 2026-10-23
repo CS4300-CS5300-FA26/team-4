@@ -77,7 +77,7 @@
                 {% if movie.where_to_watch %}
                     <p>{{ movie.where_to_watch|join:", " }}</p>
                 {% else %}
-                    <p>Streaming information unavailable in the US.</p>
+                    <p>Streaming information unavailable.</p>
                 {% endif %}
 
                 {% if user.is_authenticated and saved_movie %}
