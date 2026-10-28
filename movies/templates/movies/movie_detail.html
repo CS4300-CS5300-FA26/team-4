@@ -72,10 +72,10 @@
                     <p>Cast information unavailable.</p>
                 {% endif %}
 
-                <h3 class="section-heading">Where to Watch</h3>
+                <h3 class="section-heading">Where to Watch (US)</h3>
 
                 {% if movie.where_to_watch %}
-                    <p>{{ movie.where_to_watch }}</p>
+                    <p>{{ movie.where_to_watch|join:", " }}</p>
                 {% else %}
                     <p>Streaming information unavailable.</p>
                 {% endif %}
@@ -103,6 +103,10 @@
     <footer class="tmdb-attribution">
         <p>
             This product uses the TMDB API but is not endorsed or certified by TMDB.
+        </p>
+        <p>
+            Streaming availability data provided by
+            <a href="https://www.justwatch.com/" target="_blank" rel="noopener noreferrer">JustWatch</a>.
         </p>
     </footer>
     
