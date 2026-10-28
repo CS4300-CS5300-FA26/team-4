@@ -1,6 +1,8 @@
 from django.contrib.auth import get_user_model
+from django.core import mail
 from django.test import TestCase
 from django.urls import reverse
+from urllib.parse import urlsplit
 
 from movies.models import Movie, WatchlistItem
 
@@ -156,3 +158,64 @@ class AccountAuthTests(TestCase):
         self.assertTrue(response.context['user'].is_authenticated)
         self.assertRedirects(response, reverse('home'))
         self.assertEqual(response.wsgi_request.user.username, 'existinguser')
+
+
+class PasswordResetTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username='resetuser',
+            email='resetuser@example.com',
+            password='OldPassword123!',
+        )
+
+    def test_password_reset_email_link_changes_password(self):
+        response = self.client.post(
+            reverse('password_reset'),
+            {'email': self.user.email},
+        )
+
+        self.assertRedirects(response, reverse('password_reset_done'))
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, [self.user.email])
+
+        reset_url = next(
+            line.strip()
+            for line in mail.outbox[0].body.splitlines()
+            if 'password-reset-confirm/' in line
+        )
+        response = self.client.get(urlsplit(reset_url).path, follow=True)
+        self.assertContains(response, 'Enter new password')
+
+        response = self.client.post(
+            response.request['PATH_INFO'],
+            {
+                'new_password1': 'NewPassword456!',
+                'new_password2': 'NewPassword456!',
+            },
+            follow=True,
+        )
+
+        self.assertContains(response, 'Password reset complete')
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password('NewPassword456!'))
+
+    def test_unknown_email_does_not_send_reset_email(self):
+        response = self.client.post(
+            reverse('password_reset'),
+            {'email': 'unknown@example.com'},
+        )
+
+        self.assertRedirects(response, reverse('password_reset_done'))
+        self.assertEqual(mail.outbox, [])
+
+    def test_invalid_reset_token_does_not_change_password(self):
+        response = self.client.get(
+            reverse(
+                'password_reset_confirm',
+                kwargs={'uidb64': 'invalid', 'token': 'invalid'},
+            )
+        )
+
+        self.assertContains(response, 'invalid or has expired')
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password('OldPassword123!'))
