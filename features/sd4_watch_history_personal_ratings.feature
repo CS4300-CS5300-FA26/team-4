@@ -5,7 +5,7 @@ Feature: Watched History and Personal Ratings (User Story SD-4)
   I want to mark a title as watched and give it a personal rating
   So that my history and preferences are recorded
 
-# Gherkin Scenarios // update GitHub
+# Gherkin Scenarios
 
   Scenario: Mark a watchlist title as watched
     Given I am logged in

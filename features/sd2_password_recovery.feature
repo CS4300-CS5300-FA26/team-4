@@ -7,8 +7,9 @@ Feature: Password Recovery (User Story SD-2)
 
 # Gherkin Scenarios
 
-  Scenario: Request a password reset with a registered email
-    Given I am on the login page
+Scenario: Request a password reset with a registered email
+    Given I have an account with the email "registered@example.com"
+    And I am on the login page
     When I click "Forgot Password"
     And I submit my registered email address
     Then I should see a message saying a password reset link has been sent
@@ -18,7 +19,7 @@ Feature: Password Recovery (User Story SD-2)
     Given I have an account with the email "person@example.com"
     And I am on the password reset page
     When I submit the email "person@example.com"
-    Then I should see a message saying a reset link has been sent
+    Then I should see a message saying a password reset link has been sent
     And a password reset email should be sent to "person@example.com"
 
   Scenario: Reset password using a valid reset link
