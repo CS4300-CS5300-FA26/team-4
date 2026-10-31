@@ -6,7 +6,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from .models import Movie, WatchlistItem
-from .services import build_movie_context, fetch_movie
+from .services import build_movie_context, fetch_movie, build_search_results, search_movies
 
 
 FAKE_TMDB = {
@@ -31,6 +31,19 @@ FAKE_TMDB = {
         "rent": [{"provider_name": "Apple TV"}]},
         "FR": {"flatrate": [{"provider_name": "Canal+"}]},
     }},
+}
+
+#What TMDB's search/discover endpoints send back, trimmed down.
+FAKE_SEARCH = {
+    "page": 1, "total_pages": 1, "total_results": 3, 
+    "results": [
+        {"id": 27205, "title": "Inception", "release_date": "2010-07-15",
+        "poster_path": "/a.jpg", "vote_average": 8.4, "genre_ids": [28, 878]},
+        {"id": 1, "title": "Inception Rip-off", "release_date": "2012-01-01",
+        "poster_path": None, "vote_average": 4.2, "genre_ids": [18]},
+        {"id": 2, "title": "Inception Documentary", "release_date": "",
+        "poster_path": "/b.jpg", "vote_average": 7.0, "genre_ids": [99]},
+    ],
 }
 
 
@@ -331,3 +344,93 @@ class BuildMovieContextTest(TestCase):
         for odd in (None, "x", {}, {"results": None}, {"results": "oops"}, {"results": {"US": None}},
         {"results": {"US": {"flatrate": None}}} ):
             self.assertEqual(build_movie_context({"watch/providers": odd})["where_to_watch"], [])
+
+
+@override_settings(TMDB_API_KEY="test-key")
+class SearchMoviesTest(TestCase):
+    @patch("movies.services.requests.get")
+    def test_title_search_uses_the_search_endpoint(self, mock_get):
+        mock_get.return_value = fake_response(FAKE_SEARCH)
+        search_movies(query="  Inception ")
+        args, kwargs = mock_get.call_args
+        self.assertTrue(args[0].endswith("/search/movie"))
+        self.assertEqual(kwargs["params"]["query"], "Inception")  # trimmed
+        self.assertEqual(kwargs["params"]["api_key"], "test-key")
+        self.assertEqual(kwargs["timeout"], 10)
+
+    @patch("movies.services.requests.get")
+    def test_title_search_passes_the_year_to_tmdb(self, mock_get):
+        mock_get.return_value = fake_response(FAKE_SEARCH)
+        search_movies(query="Inception", year="2010")
+        self.assertEqual(mock_get.call_args.kwargs["params"]["primary_release_year"], "2010")
+
+    @patch("movies.services.requests.get")
+    def test_title_search_filters_genre_and_rating_ourselves(self, mock_get):
+        mock_get.return_value = fake_response(FAKE_SEARCH)
+        by_genre = search_movies(query="Inception", genre="Drama")
+        self.assertEqual([m["id"] for m in by_genre["results"]], [1])
+        by_rating = search_movies(query="Inception", min_rating=7)
+        self.assertEqual([m["id"] for m in by_rating["results"]], [27205, 2])
+
+    @patch("movies.services.requests.get")
+    def test_filters_without_a_title_use_the_discover_endpoint(self, mock_get):
+        mock_get.return_value = fake_response(FAKE_SEARCH)
+        search_movies(genre="Science Fiction", year="2010", min_rating="7.5")
+        args, kwargs = mock_get.call_args
+        self.assertTrue(args[0].endswith("/discover/movie"))
+        params = kwargs["params"]
+        self.assertEqual(params["with_genres"], 878)
+        self.assertEqual(params["primary_release_year"], "2010")
+        self.assertEqual(params["vote_average.gte"], 7.5)
+        self.assertEqual(params["vote_count.gte"], 50)
+
+    @patch("movies.services.requests.get")
+    def test_nothing_to_search_for_does_not_call_tmdb(self, mock_get):
+        for blank in ({}, {"query": "   "}, {"genre": "nonsense", "year": "20x", "min_rating": "abc"}):
+            self.assertEqual(search_movies(**blank)["results"], [])
+        mock_get.assert_not_called()
+
+    @patch("movies.services.requests.get")
+    def test_invalid_filters_are_ignored_not_sent(self, mock_get):
+        mock_get.return_value = fake_response(FAKE_SEARCH)
+        search_movies(query="x", genre="nonsense", year="99", min_rating="11")
+        params = mock_get.call_args.kwargs["params"]
+        self.assertNotIn("primary_release_year", params)
+        self.assertEqual(search_movies(query="x", min_rating="11")["results"], FAKE_SEARCH["results"])
+
+    @override_settings(TMDB_API_KEY="")
+    @patch("movies.services.requests.get")
+    def test_missing_key_gives_a_clear_error(self, mock_get):
+        with self.assertRaises(RuntimeError):
+            search_movies(query="Inception")
+        mock_get.assert_not_called()
+
+    @patch("movies.services.requests.get")
+    def test_tmdb_error_raises(self, mock_get):
+        mock_get.return_value = fake_response(status=500)
+        with self.assertRaises(requests.HTTPError):
+            search_movies(query="Inception")
+
+    @patch("movies.services.requests.get")
+    def test_odd_search_data_does_not_crash(self, mock_get):
+        mock_get.return_value = fake_response({"results": [None, "x", {"genre_ids": None, "id": 3}]})
+        self.assertEqual(search_movies(query="x", genre="Drama")["results"], [])
+        mock_get.return_value = fake_response({"results": "oops"})
+        self.assertEqual(search_movies(query="x", min_rating=5)["results"], [])
+
+
+class BuildSearchResultsTest(TestCase):
+    def test_results_become_simple_dicts(self):
+        movies = build_search_results(FAKE_SEARCH)
+        self.assertEqual(movies[0], {
+            "tmdb_id": 27205, "title": "Inception", "release_year": "2010",
+            "poster_url": "https://image.tmdb.org/t/p/w500/a.jpg", "rating": 8.4})
+
+    def test_missing_poster_and_date_are_handled(self):
+        movies = build_search_results(FAKE_SEARCH)
+        self.assertIsNone(movies[1]["poster_url"])
+        self.assertEqual(movies[2]["release_year"], "")
+
+    def test_odd_data_gives_an_empty_list(self):
+        for odd in (None, "x", {}, {"results": None}, {"results": [None, {"title": "no id"}]}):
+            self.assertEqual(build_search_results(odd), [])
