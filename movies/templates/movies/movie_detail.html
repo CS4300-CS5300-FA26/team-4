@@ -84,12 +84,29 @@
                     <form id="watchlist-form"
                           method="post"
                           action="{% url 'add_to_watchlist' saved_movie.pk %}"
-                          data-login-url="{% url 'login' %}"> 
+                          data-login-url="{% url 'login' %}">
                         {% csrf_token %}
-                        <button type="submit">Add to Watchlist</button>
+                    
+                        <span id="watchlist-button-wrapper"
+                              {% if in_watchlist %}
+                                  title="Already saved to your watchlist"
+                              {% endif %}>
+                            <button type="submit"
+                                    {% if in_watchlist %}
+                                        disabled
+                                        aria-label="Add to Watchlist — already saved"
+                                    {% endif %}>
+                                Add to Watchlist
+                            </button>
+                        </span>
+                    
+                        <p id="watchlist-message" role="status">
+                            {% if in_watchlist %}
+                                Already saved to your watchlist.
+                            {% endif %}
+                        </p>
                     </form>
 
-                    <p id="watchlist-message" role="status"></p>
                 {% endif %}
                 
                 <a href="{% url 'movie_list' %}" class="back-button">

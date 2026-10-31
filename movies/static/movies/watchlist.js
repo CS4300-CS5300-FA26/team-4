@@ -1,8 +1,14 @@
 const form = document.getElementById("watchlist-form");
 
 if (form) {
+    let isSaved = form.querySelector("button").disabled;
+
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
+
+        if (isSaved) {
+            return;
+        }
 
         const button = form.querySelector("button");
         const message = document.getElementById("watchlist-message");
@@ -62,11 +68,23 @@ if (form) {
 
             message.textContent =
                 data.message || "Movie added to your watchlist.";
+
+            isSaved = true;
+
+            const wrapper = document.getElementById(
+                "watchlist-button-wrapper"
+            );
+            wrapper.title = "Already saved to your watchlist";
+
+            button.setAttribute(
+                "aria-label",
+                "Add to Watchlist — already saved"
+            );
         } catch (error) {
             message.textContent =
                 "Unable to confirm whether the movie was added. Please try again.";
         } finally {
-            button.disabled = false;
+            button.disabled = isSaved;
         }
     });
 }

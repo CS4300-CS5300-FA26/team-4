@@ -125,3 +125,19 @@ body {
         font-size: 1.6rem;
     }
 }
+
+#watchlist-button-wrapper {
+    display: inline-block;
+}
+
+#watchlist-button-wrapper[title] {
+    cursor: not-allowed;
+}
+
+#watchlist-form button:disabled {
+    background-color: #ddd;
+    color: #666;
+    opacity: 0.7;
+    cursor: not-allowed;
+    pointer-events: none;
+}
