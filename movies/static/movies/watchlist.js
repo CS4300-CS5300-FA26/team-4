@@ -75,7 +75,6 @@ if (form) {
                 "watchlist-button-wrapper"
             );
             wrapper.title = "Already saved to your watchlist";
-            wrapper.tabIndex = 0;
 
             button.setAttribute(
                 "aria-label",
