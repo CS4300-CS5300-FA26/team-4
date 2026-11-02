@@ -85,6 +85,10 @@ def _number(value):
         return 0
     return value if math.isfinite(value) else 0
 
+# The year part of a TMDB date
+def _year_of(release_date):
+    return release_date[:4] if isinstance(release_date, str) else ""
+
 #A TMDB genre id for a genre name like "Drama", or None if unknown
 def _clean_genre(genre):
     return GENRE_IDS.get(str(genre or "").strip().lower())
@@ -159,7 +163,7 @@ def build_search_results(data):
         movies.append({
             "tmdb_id": item["id"],
             "title": item.get("title") or "",
-            "release_year": (item.get("release_date") or "")[:4],
+            "release_year": _year_of(item.get("release_date")),
             "poster_url": f"{POSTER_BASE}{poster_path}" if poster_path else None,
             "rating": item.get("vote_average"),
         })

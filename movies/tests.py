@@ -477,6 +477,13 @@ class BuildSearchResultsTest(TestCase):
         for odd in (None, "x", {}, {"results": None}, {"results": [None, {"title": "no id"}]}):
             self.assertEqual(build_search_results(odd), [])
 
+    def test_non_string_release_date_gives_an_empty_year(self):
+        for odd in (20100715, 2010.5, ["2010"], {"y": 1}, True):
+            movies = build_search_results({"results": [{"id": 1, "title": "T", "release_date": odd}]})
+            self.assertEqual(movies[0]["release_year"], "")
+        movies = build_search_results({"results": [{"id": 1, "release_date": "2010-07-15",}]})
+        self.assertEqual(movies[0]["release_year"], "2010")
+
 class CleanRatingTest(TestCase):
     def test_only_finite_numbers_from_0_to_10_are_accepted(self):
         from .services import _clean_rating
@@ -484,3 +491,5 @@ class CleanRatingTest(TestCase):
         self.assertEqual(_clean_rating(0), 0)
         for bad in ("nan","NaN", "inf", "-inf", "11", "-1", "abc", None, ""):
             self.assertIsNone(_clean_rating(bad))
+
+
