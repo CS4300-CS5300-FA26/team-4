@@ -442,6 +442,23 @@ class SearchMoviesTest(TestCase):
             mock_get.return_value = fake_response(odd)
             self.assertEqual(search_movies(query="x")["results"], [])
             self.assertEqual(search_movies(query="x", genre="Drama")["results"], [])
+    
+    @patch("movies.services.requests.get")
+    def test_odd_result_fields_are_skipped_not_crashed_on(self, mock_get):
+        good = {"id": 1, "title": "Good", "vote_average": 8, "vote_count": 500, "genre_ids": [18]}
+        odd = [
+            {"id": 2, "vote_average": "8.0", "vote_count": 500, "genre_ids": [18]},
+            {"id": 3, "vote_average": 8, "vote_count": "500", "genre_ids": [18]},
+            {"id": 4, "vote_average": float("nan"), "vote_count": 500, "genre_ids": [18]},
+            {"id": 5, "vote_average": True, "vote_count": 500, "genre_ids": [18]},
+            {"id": 6, "vote_average": 8, "vote_count": 500, "genre_ids": 18},
+            {"id": 7, "vote_average": 8, "vote_count": 500, "genre_ids": "18"},
+        ]
+        mock_get.return_value = fake_response({"results": odd + [good]})
+        by_rating = search_movies(query="x", min_rating=7)
+        self.assertEqual([m["id"] for m in by_rating["results"]], [6, 7, 1])  # odd genre_ids is fine here
+        by_genre = search_movies(query="x", genre="Drama")
+        self.assertEqual([m["id"] for m in by_genre["results"]], [2, 3, 4, 5, 1])
 
 
 class BuildSearchResultsTest(TestCase):
@@ -459,3 +476,11 @@ class BuildSearchResultsTest(TestCase):
     def test_odd_data_gives_an_empty_list(self):
         for odd in (None, "x", {}, {"results": None}, {"results": [None, {"title": "no id"}]}):
             self.assertEqual(build_search_results(odd), [])
+
+class CleanRatingTest(TestCase):
+    def test_only_finite_numbers_from_0_to_10_are_accepted(self):
+        from .services import _clean_rating
+        self.assertEqual(_clean_rating("7.5"), 7.5)
+        self.assertEqual(_clean_rating(0), 0)
+        for bad in ("nan","NaN", "inf", "-inf", "11", "-1", "abc", None, ""):
+            self.assertIsNone(_clean_rating(bad))

@@ -1,5 +1,6 @@
 import requests
 from django.conf import settings
+import math
 
 #TMDB identifies genres by number. These are TMDB's movie genre ids.
 GENRE_IDS = {
@@ -76,7 +77,13 @@ def _clean_rating(rating):
         value = float(rating)
     except (TypeError, ValueError):
         return None 
-    return value if 0 <= value <= 10 else None
+    return value if math.isfinite(value) and 0 <= value <= 10 else None
+
+# A real, finit number from TMDB data, or 0 if it is missing or odd
+def _number(value):
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return 0
+    return value if math.isfinite(value) else 0
 
 #A TMDB genre id for a genre name like "Drama", or None if unknown
 def _clean_genre(genre):
@@ -117,13 +124,13 @@ def search_movies(query="", genre=None, year=None, min_rating=None, page=1):
             data = {}
         results = data.get("results")
         results = results if isinstance(results, list) else []
+        results = [m for m in results if isinstance(m, dict)]   # skip odd entries
         if genre_id:
-            results = [m for m in results if isinstance(m, dict)
-                    and genre_id in (m.get("genre_ids") or [])]
+            results = [m for m in results if isinstance(m.get("genre_ids"), list)
+                    and genre_id in m["genre_ids"]]
         if min_rating is not None:
-            results = [m for m in results if isinstance(m, dict)
-                    and (m.get("vote_average") or 0) >= min_rating
-                    and (m.get("vote_count") or 0) >= MIN_VOTES]
+            results = [m for m in results if _number(m.get("vote_average")) >= min_rating
+            and _number(m.get("vote_count")) >= MIN_VOTES]
         filtered = bool(genre_id or min_rating is not None)
         return {**data, "results": results, "filtered": filtered, "page_total_results": len(results)}
 
