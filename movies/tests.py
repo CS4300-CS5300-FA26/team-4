@@ -38,11 +38,11 @@ FAKE_SEARCH = {
     "page": 1, "total_pages": 1, "total_results": 3, 
     "results": [
         {"id": 27205, "title": "Inception", "release_date": "2010-07-15",
-        "poster_path": "/a.jpg", "vote_average": 8.4, "genre_ids": [28, 878]},
+        "poster_path": "/a.jpg", "vote_average": 8.4, "vote_count": 9000, "genre_ids": [28, 878]},
         {"id": 1, "title": "Inception Rip-off", "release_date": "2012-01-01",
-        "poster_path": None, "vote_average": 4.2, "genre_ids": [18]},
+        "poster_path": None, "vote_average": 4.2, "vote_count": 300, "genre_ids": [18]},
         {"id": 2, "title": "Inception Documentary", "release_date": "",
-        "poster_path": "/b.jpg", "vote_average": 7.0, "genre_ids": [99]},
+        "poster_path": "/b.jpg", "vote_average": 7.0, "vote_count": 400, "genre_ids": [99]},
     ],
 }
 
@@ -418,6 +418,23 @@ class SearchMoviesTest(TestCase):
         mock_get.return_value = fake_response({"results": "oops"})
         self.assertEqual(search_movies(query="x", min_rating=5)["results"], [])
 
+    @patch("movies.services.requests.get")
+    def test_filtered_title_search_says_so_and_counts_this_pages_matches(self, mock_get):
+        mock_get.return_value = fake_response(FAKE_SEARCH)
+        filtered = search_movies(query="Inception", genre="Drama")
+        self.assertTrue(filtered["filtered"])
+        self.assertEqual(filtered["page_total_results"], 1)
+        self.assertEqual(filtered["total_results"], 3)      #TMDB's unfiltered total
+        plain = search_movies(query="Inception")
+        self.assertFalse(plain["filtered"])
+        self.assertEqual(plain["page_total_results"], 3)
+
+    @patch("movies.services.requests.get")
+    def test_page_is_forced_to_a_valid_number(self, mock_get):
+        mock_get.return_value = fake_response(FAKE_SEARCH)
+        for given, sent in ((3, 3), ("2", 2), (0, 1), (-5, 1), ("abc", 1), (None, 1), (99999, 500)):
+            search_movies(query="x", page=given)
+            self.assertEqual(mock_get.call_args.kwargs["params"]["page"], sent)
 
 class BuildSearchResultsTest(TestCase):
     def test_results_become_simple_dicts(self):

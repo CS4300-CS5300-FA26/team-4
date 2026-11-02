@@ -14,6 +14,7 @@ POSTER_BASE = "https://image.tmdb.org/t/p/w500"
 CAST_LIMIT = 10
 WATCH_REGION = 'US' #Steaming availability differs by country. We only show US results for now 
 MIN_VOTES = 50  # ignores movies with a handful of votes, so rating mean something
+MAX_PAGE = 500 #TMDB rejects page numbers above 500
 
 #-- Movie Details ---------------------------------------------------------------------------
 #Ask TMDB for one movie and return the raw anser
@@ -81,6 +82,14 @@ def _clean_rating(rating):
 def _clean_genre(genre):
     return GENRE_IDS.get(str(genre or "").strip().lower())
 
+#A page number betweeen 1 and MAX_PAGE; anything else becomes 1
+def _clean_page(page):
+    try:
+        number = int(page)
+    except(TypeError, ValueError):
+        return 1
+    return min(number, MAX_PAGE) if number >= 1 else 1
+
 #Call TMDB with key. Same failure behavior as fetch_movie
 def _get(path, params):
     if not settings.TMDB_API_KEY:
@@ -97,6 +106,7 @@ def search_movies(query="", genre=None, year=None, min_rating=None, page=1):
     genre_id = _clean_genre(genre)
     year = _clean_year(year)
     min_rating = _clean_rating(min_rating)
+    page = _clean_page(page)
 
     if query:
         params = {"query": query, "page": page}
@@ -110,8 +120,10 @@ def search_movies(query="", genre=None, year=None, min_rating=None, page=1):
                     and genre_id in (m.get("genre_ids") or [])]
         if min_rating is not None:
             results = [m for m in results if isinstance(m, dict)
-                    and (m.get("vote_average") or 0) >= min_rating]
-        return {**data, "results": results}
+                    and (m.get("vote_average") or 0) >= min_rating
+                    and (m.get("vote_count") or 0) >= MIN_VOTES]
+        filtered = bool(genre_id or min_rating is not None)
+        return {**data, "results": results, "filtered": filtered, "page_total_results": len(results)}
 
     if not (genre_id or year or min_rating is not None):
         return {"page": 1, "results": [], "total_pages": 0, "total_results": 0}
