@@ -113,6 +113,8 @@ def search_movies(query="", genre=None, year=None, min_rating=None, page=1):
         if year:
             params["primary_release_year"] = year
         data = _get("/search/movie", params)
+        if not isinstance(data, dict):  # a successful but malformed reply
+            data = {}
         results = data.get("results")
         results = results if isinstance(results, list) else []
         if genre_id:

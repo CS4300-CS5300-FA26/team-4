@@ -436,6 +436,14 @@ class SearchMoviesTest(TestCase):
             search_movies(query="x", page=given)
             self.assertEqual(mock_get.call_args.kwargs["params"]["page"], sent)
 
+    @patch("movies.services.requests.get")
+    def test_reply_that_is_not_a_dictionary_gives_no_results(self, mock_get):
+        for odd in ([], ["x"], None, "oops"):
+            mock_get.return_value = fake_response(odd)
+            self.assertEqual(search_movies(query="x")["results"], [])
+            self.assertEqual(search_movies(query="x", genre="Drama")["results"], [])
+
+
 class BuildSearchResultsTest(TestCase):
     def test_results_become_simple_dicts(self):
         movies = build_search_results(FAKE_SEARCH)
