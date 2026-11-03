@@ -11,9 +11,14 @@
 {% endblock %}
 
 {% block content %}
+
     {% if request.GET.from == "watchlist" %}
         <a href="{% url 'home' %}" class="back-link">
             &larr; Back to Watchlist
+        </a>
+    {% elif request.GET.from == "search" %}
+        <a href="{{ search_url }}" class="back-link">
+            &larr; Back to Search
         </a>
     {% else %}
         <a href="{% url 'movie_list' %}" class="back-link">
@@ -125,10 +130,15 @@
                     <a href="{% url 'home' %}" class="back-button">
                         Back to Watchlist
                     </a>
+                {% elif request.GET.from == "search" %}
+                    <a href="{{ search_url }}" class="back-button">
+                        Back to Search
+                    </a>
                 {% else %}
                     <a href="{% url 'movie_list' %}" class="back-button">
                         Back to Movie List
                     </a>
+                
                 {% endif %}
             </section>
         </article>
