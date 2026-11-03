@@ -3,6 +3,7 @@ import requests
 
 from django.http import Http404, HttpResponseNotAllowed, JsonResponse
 from django.shortcuts import get_object_or_404, render
+from django.urls import reverse
 
 from .models import Movie, WatchlistItem
 from .services import (
@@ -147,6 +148,11 @@ def add_to_watchlist(request, movie_id):
 
 # Show one title's details, pulled live from TMDB
 def movie_detail(request, tmdb_id):
+    search_url = reverse('movie_search')
+
+    if request.GET.get('search'):
+        search_url += '?' + request.GET['search']
+    
     try:
         data = fetch_movie(tmdb_id)
     except RuntimeError:
