@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 
 # This model represents a movie in the personal movie watchlist application.
@@ -33,6 +34,17 @@ class WatchlistItem(models.Model):
         on_delete=models.CASCADE
     )
     added_at = models.DateTimeField(auto_now_add=True)
+
+    watched = models.BooleanField(default=False)
+
+    rating = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        validators=[
+            MinValueValidator(1),
+            MaxValueValidator(5),
+        ],
+    )
 
     class Meta:
         constraints = [
