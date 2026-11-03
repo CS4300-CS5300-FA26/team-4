@@ -96,11 +96,20 @@ def movie_detail(request, tmdb_id):
 
     saved_movie = Movie.objects.filter(tmdb_id=tmdb_id).first()
 
+    in_watchlist = False
+
+    if request.user.is_authenticated and saved_movie:
+        in_watchlist = WatchlistItem.objects.filter(
+            user=request.user,
+            movie=saved_movie,
+        ).exists()
+
     return render(
         request,
         'movies/movie_detail.html',
         {
             'movie': build_movie_context(data),
             'saved_movie': saved_movie,
+            'in_watchlist': in_watchlist
         }
     )
