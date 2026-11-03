@@ -64,7 +64,7 @@ def step_reset_link_confirmation(context):
     assert (
         b"password reset" in context.response.content.lower()
         or b"reset link" in context.response.content.lower()
-        or b"email" in context.response.content.lower() # might wanna make this better
+        or b"email" in context.response.content.lower()
     )
 
 @then("a password reset email should be sent to my email address")
