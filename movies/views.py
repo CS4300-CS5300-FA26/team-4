@@ -215,6 +215,7 @@ def movie_detail(request, tmdb_id):
         {
             'movie': build_movie_context(data),
             'saved_movie': saved_movie,
-            'in_watchlist': in_watchlist
+            'in_watchlist': in_watchlist,
+            'search_url': search_url,
         }
     )
