@@ -163,7 +163,7 @@ def movie_detail(request, tmdb_id):
         return render(
             request,
             'movies/movie_detail.html',
-            {'error': True},
+            {'error': True, 'search_url': search_url},,
             status=503
         )
     except requests.HTTPError as exc:
@@ -180,14 +180,14 @@ def movie_detail(request, tmdb_id):
             return render(
                 request,
                 'movies/movie_detail.html',
-                {'error': True},
+                {'error': True, 'search_url': search_url},,
                 status=503
             )
 
         return render(
             request,
             'movies/movie_detail.html',
-            {'error': True},
+            {'error': True, 'search_url': search_url},,
             status=502
         )
 
@@ -195,7 +195,7 @@ def movie_detail(request, tmdb_id):
         return render(
             request,
             'movies/movie_detail.html',
-            {'error': True},
+            {'error': True, 'search_url': search_url},,
             status=502
         )
 
