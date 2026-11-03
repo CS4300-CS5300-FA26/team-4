@@ -1,93 +1,68 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Personal Movie Watch List</title>
+{% extends "base.html" %}
 
-    <style>
-        body {
-            font-family: system-ui, sans-serif;
-            max-width: 800px;
-            margin: 2rem auto;
-            padding: 0 1rem;
-        }
+{% block title %}Browse Movies | Personal Movie Watch List{% endblock %}
 
-        h1 {
-            margin-bottom: 0.5rem;
-        }
+{% block content %}
+    <section class="page-intro">
+        <p class="eyebrow">Find your next favorite</p>
 
-        .movie {
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 1rem;
-            margin-bottom: 1rem;
-        }
+        <h1>A good night starts with a great movie.</h1>
 
-        .movie h2 {
-            margin: 0 0 0.5rem 0;
-        }
-
-        .year {
-            color: #666;
-            font-size: 0.9rem;
-        }
-
-        .overview {
-            margin-top: 0.5rem;
-        }
-
-        .empty {
-            color: #888;
-            font-style: italic;
-        }
-    </style>
-</head>
-
-<body>
-    <h1>Personal Movie Watch List</h1>
-    <p>Movies currently in the database:</p>
-
-    <nav>
-        {% if user.is_authenticated %}
-            <a href="{% url 'home' %}" class="back-button">
-                My Watchlist
-            </a>
-        {% else %}
-            <a href="{% url 'login' %}">Log in</a> |
-            <a href="{% url 'register' %}">Register</a>
-        {% endif %}
-    </nav>
+        <p>
+            Explore the collection, discover the details, and save
+            something for your next movie night.
+        </p>
+    </section>
 
     {% if movies %}
-        {% for movie in movies %}
-            <div class="movie">
-                <h2>
-                    {% if movie.tmdb_id %}
-                        <a href="{% url 'movie_detail' movie.tmdb_id %}">
-                            {{ movie.title }}
-                        </a>
+        <section class="movie-grid" aria-label="Movies">
+            {% for movie in movies %}
+                <article class="movie">
+                    {% if movie.poster_url %}
+                        <img
+                            class="movie-thumbnail"
+                            src="{{ movie.poster_url }}"
+                            alt="Poster for {{ movie.title }}"
+                            loading="lazy"
+                        >
                     {% else %}
-                        {{ movie.title }}
+                        <div
+                            class="movie-thumbnail poster-placeholder"
+                            aria-hidden="true"
+                        >
+                            Poster unavailable
+                        </div>
                     {% endif %}
-                </h2>
 
-                {% if movie.release_year %}
-                    <div class="year">
-                        {{ movie.release_year }}
-                    </div>
-                {% endif %}
+                    <div class="movie-body">
+                        {% if movie.release_year %}
+                            <p class="year">{{ movie.release_year }}</p>
+                        {% endif %}
 
-                {% if movie.overview %}
-                    <div class="overview">
-                        {{ movie.overview }}
+                        <h2>
+                            {% if movie.tmdb_id %}
+                                <a href="{% url 'movie_detail' movie.tmdb_id %}">
+                                    {{ movie.title }}
+                                </a>
+                            {% else %}
+                                {{ movie.title }}
+                            {% endif %}
+                        </h2>
+
+                        {% if movie.overview %}
+                            <p class="overview">{{ movie.overview }}</p>
+                        {% endif %}
                     </div>
-                {% endif %}
-            </div>
-        {% endfor %}
+                </article>
+            {% endfor %}
+        </section>
     {% else %}
-        <p class="empty">
-            No movies in the database yet. Add some using the Django shell or admin.
-        </p>
+        <section class="empty">
+            <h2>The collection is on its way</h2>
+            <p>
+                No movies in the database yet.
+                Check back soon for something to watch.
+            </p>
+        </section>
     {% endif %}
-</body>
-</html>
+{% endblock %}
