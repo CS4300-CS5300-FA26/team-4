@@ -11,7 +11,11 @@ class Movie(models.Model):
     overview = models.TextField(blank=True)
     release_year = models.PositiveIntegerField(null=True, blank=True)
     poster_url = models.URLField(blank=True)
-    tmdb_id = models.PositiveIntegerField(unique=True, null=True, blank=True)
+    tmdb_id = models.PositiveIntegerField(
+        unique=True,
+        null=True,
+        blank=True
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -28,11 +32,25 @@ class WatchlistItem(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE
     )
+
     movie = models.ForeignKey(
         Movie,
         on_delete=models.CASCADE
     )
+
     added_at = models.DateTimeField(auto_now_add=True)
+
+    watched = models.BooleanField(default=False)
+
+    personal_rating = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True
+    )
+
+    watched_at = models.DateTimeField(
+        null=True,
+        blank=True
+    )
 
     class Meta:
         constraints = [
