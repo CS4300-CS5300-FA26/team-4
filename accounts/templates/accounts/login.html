@@ -1,11 +1,36 @@
-<h2>Login</h2>
-<form method="post">
-  {% csrf_token %}
-  {% if next %}
-    <input type="hidden" name="next" value="{{ next }}">
-  {% endif %}
-  {{ form.as_p }}
-  <button type="submit">Login</button>
-</form>
-<p>Need an account? <a href="{% url 'register' %}">Register here</a>.</p>
-<p><a href="{% url 'password_reset' %}">Forgot Password?</a></p>
+{% extends "base.html" %}
+
+{% block title %}Login | Personal Movie Watch List{% endblock %}
+
+{% block content %}
+    <section class="auth-card">
+        <p class="eyebrow">Your movie collection</p>
+
+        <h1>Welcome back</h1>
+
+        <p>Log in to find your next movie and revisit your watchlist.</p>
+
+        <form method="post">
+            {% csrf_token %}
+
+            {% if next %}
+                <input type="hidden" name="next" value="{{ next }}">
+            {% endif %}
+
+            {{ form.as_p }}
+
+            <button type="submit">Login</button>
+        </form>
+
+        <div class="auth-links">
+            <p>
+                Need an account?
+                <a href="{% url 'register' %}">Register here</a>.
+            </p>
+
+            <p>
+                <a href="{% url 'password_reset' %}">Forgot Password?</a>
+            </p>
+        </div>
+    </section>
+{% endblock %}

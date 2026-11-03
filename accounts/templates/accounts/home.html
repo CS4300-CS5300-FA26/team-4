@@ -1,37 +1,66 @@
-<h2>Home</h2>
+{% extends "base.html" %}
 
-{% if user.is_authenticated %}
-  <p>Welcome to your personalized dashboard, {{ user.username }}!</p>
+{% block title %}My Watchlist | Personal Movie Watch List{% endblock %}
 
-  <form method="get" action="{% url 'movie_list' %}">
-    <button type="submit">Browse Movies</button>
-  </form>
+{% block content %}
+    {% if user.is_authenticated %}
+        <section class="page-intro">
+            <p class="eyebrow">Saved for movie night</p>
 
-  <ul>
-    {% for item in watchlist_items %}
-      <li>
-        {% if item.movie.tmdb_id %}
-          <a href="{% url 'movie_detail' item.movie.tmdb_id %}">
-            {{ item.movie.title }}
-          </a>
+            <h1>My Watchlist</h1>
+
+            <p>
+                Welcome to your personalized dashboard, {{ user.username }}!
+            </p>
+
+            <a class="button" href="{% url 'movie_list' %}">
+                Browse Movies
+            </a>
+        </section>
+
+        {% if watchlist_items %}
+            <ul class="watchlist">
+                {% for item in watchlist_items %}
+                    <li>
+                        {% if item.movie.poster_url %}
+                            <img
+                                src="{{ item.movie.poster_url }}"
+                                alt="Poster for {{ item.movie.title }}"
+                                loading="lazy"
+                            >
+                        {% endif %}
+
+                        <div>
+                            {% if item.movie.tmdb_id %}
+                                <a href="{% url 'movie_detail' item.movie.tmdb_id %}">
+                                    {{ item.movie.title }}
+                                </a>
+                            {% else %}
+                                {{ item.movie.title }}
+                            {% endif %}
+
+                            {% if item.movie.release_year %}
+                                <p class="year">
+                                    {{ item.movie.release_year }}
+                                </p>
+                            {% endif %}
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
         {% else %}
-          {{ item.movie.title }}
+            <section class="empty">
+                <h2>Make room for a new favorite.</h2>
+                <p>Your watchlist is empty. Browse movies to add one!</p>
+            </section>
         {% endif %}
-
-        {% if item.movie.release_year %}
-          ({{ item.movie.release_year }})
-        {% endif %}
-      </li>
-    {% empty %}
-      <li>Your watchlist is empty. Browse movies to add one!</li>
-    {% endfor %}
-  </ul>
-
-  <form method="post" action="{% url 'logout' %}">
-    {% csrf_token %}
-    <button type="submit">Logout</button>
-  </form>
-
-{% else %}
-  <p>Please <a href="{% url 'login' %}">log in</a>.</p>
-{% endif %}
+    {% else %}
+        <section class="auth-card">
+            <h1>Your watchlist awaits</h1>
+            <p>
+                Please <a href="{% url 'login' %}">log in</a>
+                to see your saved movies.
+            </p>
+        </section>
+    {% endif %}
+{% endblock %}
