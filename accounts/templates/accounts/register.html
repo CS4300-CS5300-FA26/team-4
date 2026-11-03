@@ -1,7 +1,28 @@
-<h2>Register</h2>
-<form method="post">
-  {% csrf_token %}
-  {{ form.as_p }}
-  <button type="submit">Register</button>
-</form>
-<p>Already have an account? <a href="{% url 'login' %}">Log in here</a>.</p>
+{% extends "base.html" %}
+
+{% block title %}Register | Personal Movie Watch List{% endblock %}
+
+{% block content %}
+    <section class="auth-card">
+        <p class="eyebrow">Your movie collection</p>
+
+        <h1>Create your account</h1>
+
+        <p>Start saving movies for your next movie night.</p>
+
+        <form method="post">
+            {% csrf_token %}
+
+            {{ form.as_p }}
+
+            <button type="submit">Register</button>
+        </form>
+
+        <div class="auth-links">
+            <p>
+                Already have an account?
+                <a href="{% url 'login' %}">Log in here</a>.
+            </p>
+        </div>
+    </section>
+{% endblock %}
