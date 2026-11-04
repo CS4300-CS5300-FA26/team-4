@@ -10,7 +10,7 @@ GENRE_IDS = {
     "romance": 10749, "science fiction": 878, "thriller": 53, "war": 10752, "western": 37,
 }
 
-#Streaming services (TMDB "watch provider" ids) offered in teh search filter
+#Streaming services (TMDB "watch provider" ids) offered in the search filter
 PROVIDER_IDS = { #A "|" means OR: some services have several plan tiers with separate ids.
     "Netflix": 8, "Hulu": 15, "Amazon Prime Video": 9, "Disney+": 337,
     "HBO Max": 1899, "Apple TV": 350, "Paramount+": "2303|2616", "Peacock": "386|387",  
@@ -96,7 +96,7 @@ def _number(value):
 def _year_of(release_date):
     return release_date[:4] if isinstance(release_date, str) else ""
 
-#A TMDB watch-procider id for a service name like 'Netflix' or None
+#A TMDB watch-provider id for a service name like 'Netflix' or None
 def _clean_provider(provider):
     return _PROVIDERS_BY_LOWERCASE.get(str(provider or "").strip().lower())
 
