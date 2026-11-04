@@ -1,15 +1,15 @@
 from django.conf import settings
 from django.db import models
+from django.db.models import Q
 
 
-# This model represents a movie in the personal movie watchlist application.
-# It includes fields for the title, overview, release year, poster URL, TMDB ID,
-# and the date the movie was added to the database.
-# Movies are ordered alphabetically by title.
 class Movie(models.Model):
     title = models.CharField(max_length=255)
     overview = models.TextField(blank=True)
-    release_year = models.PositiveIntegerField(null=True, blank=True)
+    release_year = models.PositiveIntegerField(
+        null=True,
+        blank=True
+    )
     poster_url = models.URLField(blank=True)
     tmdb_id = models.PositiveIntegerField(
         unique=True,
@@ -25,8 +25,6 @@ class Movie(models.Model):
         return self.title
 
 
-# This model represents a movie saved to a user's personal watchlist.
-# Each watchlist item belongs to one user and one movie.
 class WatchlistItem(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -57,6 +55,16 @@ class WatchlistItem(models.Model):
             models.UniqueConstraint(
                 fields=['user', 'movie'],
                 name='unique_user_movie_watchlist'
+            ),
+            models.CheckConstraint(
+                condition=(
+                    Q(personal_rating__isnull=True)
+                    | Q(
+                        personal_rating__gte=1,
+                        personal_rating__lte=10
+                    )
+                ),
+                name='personal_rating_between_1_and_10'
             )
         ]
 
