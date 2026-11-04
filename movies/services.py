@@ -10,6 +10,13 @@ GENRE_IDS = {
     "romance": 10749, "science fiction": 878, "thriller": 53, "war": 10752, "western": 37,
 }
 
+#Streaming services (TMDB "watch provider" ids) offered in the search filter
+PROVIDER_IDS = { #A "|" means OR: some services have several plan tiers with separate ids.
+    "Netflix": 8, "Hulu": 15, "Amazon Prime Video": 9, "Disney+": 337,
+    "HBO Max": 1899, "Apple TV": 350, "Paramount+": "2303|2616", "Peacock": "386|387",  
+}
+_PROVIDERS_BY_LOWERCASE = {name.lower(): pid for name, pid in PROVIDER_IDS.items()}
+
 TMDB_BASE = "https://api.themoviedb.org/3"
 POSTER_BASE = "https://image.tmdb.org/t/p/w500"
 CAST_LIMIT = 10
@@ -89,6 +96,10 @@ def _number(value):
 def _year_of(release_date):
     return release_date[:4] if isinstance(release_date, str) else ""
 
+#A TMDB watch-provider id for a service name like 'Netflix' or None
+def _clean_provider(provider):
+    return _PROVIDERS_BY_LOWERCASE.get(str(provider or "").strip().lower())
+
 #A TMDB genre id for a genre name like "Drama", or None if unknown
 def _clean_genre(genre):
     return GENRE_IDS.get(str(genre or "").strip().lower())
@@ -112,12 +123,13 @@ def _get(path, params):
     return response.json()
     
 #Find movies by title and/or genre, year and minimum rating.
-def search_movies(query="", genre=None, year=None, min_rating=None, page=1):
+def search_movies(query="", genre=None, year=None, min_rating=None, page=1, provider=None):
     query = (query or "").strip()
     genre_id = _clean_genre(genre)
     year = _clean_year(year)
     min_rating = _clean_rating(min_rating)
     page = _clean_page(page)
+    provider_id = _clean_provider(provider)
 
     if query:
         params = {"query": query, "page": page}
@@ -136,9 +148,9 @@ def search_movies(query="", genre=None, year=None, min_rating=None, page=1):
             results = [m for m in results if _number(m.get("vote_average")) >= min_rating
             and _number(m.get("vote_count")) >= MIN_VOTES]
         filtered = bool(genre_id or min_rating is not None)
-        return {**data, "results": results, "filtered": filtered, "page_total_results": len(results)}
+        return {**data, "results": results, "filtered": filtered, "page_total_results": len(results), "provider_ignored": bool(provider_id)}
 
-    if not (genre_id or year or min_rating is not None):
+    if not (genre_id or year or min_rating is not None or provider_id):
         return {"page": 1, "results": [], "total_pages": 0, "total_results": 0}
     
     params = {"page": page, "sort_by": "popularity.desc", "vote_count.gte": MIN_VOTES}
@@ -148,6 +160,10 @@ def search_movies(query="", genre=None, year=None, min_rating=None, page=1):
         params["primary_release_year"] = year
     if min_rating is not None:
         params["vote_average.gte"] = min_rating
+    if provider_id:
+        params["with_watch_providers"] = provider_id
+        params["watch_region"] = WATCH_REGION
+        params["with_watch_monetization_types"] = "flatrate"
     return _get("/discover/movie", params)
 
 #Turn TMDB's search reply into simple dicts the Search page can loop over

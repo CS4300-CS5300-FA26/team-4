@@ -1,6 +1,6 @@
 from django import forms
 
-from .services import GENRE_IDS
+from .services import GENRE_IDS, PROVIDER_IDS
 
 
 class MovieSearchForm(forms.Form):
@@ -46,4 +46,10 @@ class MovieSearchForm(forms.Form):
                 "placeholder": "0–10",
             }
         ),
+    )
+
+    provider = forms.ChoiceField(
+        label="Streaming service (US)",
+        required=False,
+        choices=[("", "Any service")] + [(name, name) for name in PROVIDER_IDS],
     )

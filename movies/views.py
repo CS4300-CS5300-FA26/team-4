@@ -103,6 +103,7 @@ def movie_search(request):
                 'page': page,
                 'total_pages': total_pages,
                 'filtered': bool(data.get('filtered')),
+                'provider_ignored': bool(data.get('provider_ignored')),
                 'search_params': request.GET.urlencode(),
             })
 
