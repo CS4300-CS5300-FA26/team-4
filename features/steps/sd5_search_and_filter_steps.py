@@ -131,7 +131,19 @@ def step_select_streaming_service(context):
 
 @then('only titles available on the selected streaming service should be displayed')
 def step_streaming_results(context):
-    raise NotImplementedError("Waiting for search page implementation")
+    submit_search(context, context.filters)
+
+    assert context.response.status_code == 200
+
+    # search service should be called when provider filtering is implemented
+    assert context.api_mock.called, (
+        "Streaming service filter was not passed to the search service. "
+        "Backend support for provider filtering is missing."
+    )
+
+    path, params = context.api_mock.call_args.args
+
+    assert params['with_watch_providers'] == 'Netflix'
 
 # --- Filter results by rating ---
 @when('I select a rating filter')
