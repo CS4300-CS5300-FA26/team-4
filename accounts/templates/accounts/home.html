@@ -44,6 +44,45 @@
                                     {{ item.movie.release_year }}
                                 </p>
                             {% endif %}
+
+                            <form
+                                class="watchlist-update-form"
+                                method="post"
+                                action="{% url 'update_watchlist_item' item.movie.pk %}"
+                            >
+                                {% csrf_token %}
+
+                                <p>
+                                    <label for="watched-{{ item.pk }}">
+                                        <input
+                                            type="checkbox"
+                                            id="watched-{{ item.pk }}"
+                                            name="watched"
+                                            value="true"
+                                            {% if item.watched %}checked{% endif %}
+                                        >
+                                        Watched
+                                    </label>
+                                </p>
+
+                                <p>
+                                    <label for="rating-{{ item.pk }}">Your rating (1–10)</label>
+
+                                    <input
+                                        type="number"
+                                        id="rating-{{ item.pk }}"
+                                        name="rating"
+                                        min="1"
+                                        max="10"
+                                        step="1"
+                                        value="{{ item.personal_rating|default_if_none:'' }}"
+                                    >
+                                </p>
+
+                                <button type="submit">Save</button>
+
+                                <p class="update-message" role="status" aria-live="polite"></p>
+                            </form>
                         </div>
                     </li>
                 {% endfor %}
@@ -63,4 +102,51 @@
             </p>
         </section>
     {% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.querySelectorAll(".watchlist-update-form").forEach((form) => {
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault();
+
+            const button = form.querySelector('button[type="submit"]');
+            const message = form.querySelector(".update-message");
+            const watched = form.querySelector('input[name="watched"]');
+            const formData = new FormData(form);
+
+            // Send false explicitly when the checkbox is unchecked.
+            formData.set("watched", watched.checked ? "true" : "false");
+
+            button.disabled = true;
+            message.textContent = "Saving…";
+
+            try {
+                const response = await fetch(form.action, {
+                    method: "POST",
+                    body: formData,
+                    credentials: "same-origin",
+                });
+
+                if (response.status === 401) {
+                    message.textContent = "Please log in again to save changes.";
+                    return;
+                }
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    message.textContent = data.error || "Couldn't save changes.";
+                    return;
+                }
+
+                message.textContent = "Changes saved.";
+            } catch (error) {
+                message.textContent = "Couldn't save changes. Please try again.";
+            } finally {
+                button.disabled = false;
+            }
+        });
+    });
+</script>
 {% endblock %}

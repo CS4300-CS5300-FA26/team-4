@@ -3,10 +3,18 @@ import requests
 
 from django.http import Http404, HttpResponseNotAllowed, JsonResponse
 from django.shortcuts import get_object_or_404, render
+from django.urls import reverse
 from django.utils import timezone
 
 from .models import Movie, WatchlistItem
-from .services import build_movie_context, fetch_movie
+from .services import (
+    MAX_PAGE,
+    build_movie_context,
+    build_search_results,
+    fetch_movie,
+    search_movies,
+)
+from .forms import MovieSearchForm
 
 
 logger = logging.getLogger(__name__)
@@ -23,6 +31,98 @@ def movie_list(request):
         {'movies': movies}
     )
 
+def movie_search(request):
+    form = MovieSearchForm(request.GET or None)
+
+    context = {
+        'form': form,
+        'movies': [],
+        'searched': False,
+    }
+
+    if form.is_bound and form.is_valid():
+        filters = form.cleaned_data
+
+        # Only search when at least one field has a value.
+        # A minimum rating of 0 still counts as a value.
+        context['searched'] = any(
+            value not in ('', None)
+            for value in filters.values()
+        )
+
+        if context['searched']:
+            # Keep page numbers between 1 and TMDB's limit.
+            try:
+                page = max(
+                    1,
+                    min(int(request.GET.get('page', 1)), MAX_PAGE),
+                )
+            except (TypeError, ValueError):
+                page = 1
+
+            try:
+                data = search_movies(**filters, page=page)
+
+            except RuntimeError:
+                context['error'] = (
+                    'Movie search is unavailable right now. '
+                    'Please try again later.'
+                )
+                return render(
+                    request,
+                    'movies/movie_search.html',
+                    context,
+                    status=503,
+                )
+
+            except requests.RequestException:
+                context['error'] = (
+                    "We couldn't reach the movie database. "
+                    "Please try again."
+                )
+                return render(
+                    request,
+                    'movies/movie_search.html',
+                    context,
+                    status=502,
+                )
+
+            data = data if isinstance(data, dict) else {}
+
+            context['movies'] = build_search_results(data)
+
+            try:
+                total_pages = max(
+                    0,
+                    min(int(data.get('total_pages', 0)), MAX_PAGE),
+                )
+            except (TypeError, ValueError):
+                total_pages = 0
+
+            context.update({
+                'page': page,
+                'total_pages': total_pages,
+                'filtered': bool(data.get('filtered')),
+                'search_params': request.GET.urlencode(),
+            })
+
+            # Preserve search inputs when moving between pages.
+            params = request.GET.copy()
+            params.pop('page', None)
+
+            if page > 1:
+                params['page'] = page - 1
+                context['previous_url'] = '?' + params.urlencode()
+
+            if page < total_pages:
+                params['page'] = page + 1
+                context['next_url'] = '?' + params.urlencode()
+
+    return render(
+        request,
+        'movies/movie_search.html',
+        context,
+    )
 
 def add_to_watchlist(request, movie_id):
     if not request.user.is_authenticated:
@@ -136,6 +236,11 @@ def update_watchlist_item(request, movie_id):
 
 # Show one title's details, pulled live from TMDB
 def movie_detail(request, tmdb_id):
+    search_url = reverse('movie_search')
+
+    if request.GET.get('search'):
+        search_url += '?' + request.GET['search']
+    
     try:
         data = fetch_movie(tmdb_id)
 
@@ -149,7 +254,7 @@ def movie_detail(request, tmdb_id):
         return render(
             request,
             'movies/movie_detail.html',
-            {'error': True},
+            {'error': True, 'search_url': search_url},
             status=503
         )
 
@@ -174,14 +279,14 @@ def movie_detail(request, tmdb_id):
             return render(
                 request,
                 'movies/movie_detail.html',
-                {'error': True},
+                {'error': True, 'search_url': search_url},
                 status=503
             )
 
         return render(
             request,
             'movies/movie_detail.html',
-            {'error': True},
+            {'error': True, 'search_url': search_url},
             status=502
         )
 
@@ -189,7 +294,7 @@ def movie_detail(request, tmdb_id):
         return render(
             request,
             'movies/movie_detail.html',
-            {'error': True},
+            {'error': True, 'search_url': search_url},
             status=502
         )
 
@@ -211,6 +316,7 @@ def movie_detail(request, tmdb_id):
         {
             'movie': build_movie_context(data),
             'saved_movie': saved_movie,
-            'in_watchlist': in_watchlist
+            'in_watchlist': in_watchlist,
+            'search_url': search_url,
         }
     )
