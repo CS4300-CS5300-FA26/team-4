@@ -98,4 +98,6 @@ AI was used to create diagrams (Sprint 0-2).
 
 AI assisted in README.md, Django app templates, configuring Django for Render deployment, and generating movie recommendations with brief descriptions (Sprint 0-3).
 
-AI assisted with understanding and troubleshooting Django application code and Behave BDD tests, including feature scenarios and step definitions. Suggestions were reviewed and adapted to the project as needed. We also used it to give feedback when reviewing pull requests (PRs). Also AI assisted with creating HTML/CSS pages and configuring Django for Azure deployment (Sprint 1)
+AI assisted with understanding and troubleshooting Django application code and Behave BDD tests, including feature scenarios and step definitions. Suggestions were reviewed and adapted to the project as needed. We also used it to give feedback when reviewing pull requests (PRs). Also, AI assisted with creating HTML/CSS pages and configuring Django for Azure deployment. (Sprint 1)
+
+AI assisted with explaining and troubleshooting Django functionality and Behave BDD tests, including features and step definitions. It also helped review code and provide suggestions for improving the application's functionality. Also, AI assisted with creating HTML/CSS pages as well as search and rating features (Sprint 2)
