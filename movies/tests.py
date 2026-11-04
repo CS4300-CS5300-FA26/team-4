@@ -1215,6 +1215,48 @@ class SearchMoviesTest(TestCase):
             [2, 3, 4, 5, 1]
         )
 
+@override_settings(TMDB_API_KEY="test-key")
+class SearchByStreamingServiceTest(TestCase):
+    @patch("movies.services.requests.get")
+    def test_service_alone_uses_discover_with_our_region_and_subscriptions(self, mock_get):
+        mock_get.return_value = fake_response(FAKE_SEARCH)
+        search_movies(provider="netflix")
+        args, kwargs = mock_get.call_args
+        self.assertTrue(args[0].endswith("/discover/movie"))
+        params = kwargs["params"]
+        self.assertEqual(params["with_watch_providers"], 8)
+        self.assertEqual(params["watch_region"], "US")
+        self.assertEqual(params["with_watch_monetization_types"], "flatrate")
+
+    @patch("movies.services.requests.get")
+    def test_service_combines_with_the_other_filters(self, mock_get):
+        mock_get.return_value = fake_response(FAKE_SEARCH)
+        search_movies(provider="Disney+", genre="Animation", year="2019")
+        params = mock_get.call_args.kwargs["params"]
+        self.assertEqual(params["with_watch_providers"], 337)
+        self.assertEqual(params["with_genres"], 16)
+        self.assertEqual(params["primary_release_year"], "2019")
+
+    @patch("movies.services.requests.get")
+    def test_service_with_a_title_is_ignored_and_flagged(self, mock_get):
+        mock_get.return_value = fake_response(FAKE_SEARCH)
+        data = search_movies(query="Inception", provider="Netflix")
+        args, kwargs = mock_get.call_args
+        self.assertTrue(args[0].endswith("/search/movie"))
+        self.assertNotIn("with_watch_providers", kwargs["params"])
+        self.assertTrue(data["provider_ignored"])
+        self.assertFalse(search_movies(query="Inception")["provider_ignored"])
+
+    @patch("movies.services.requests.get")
+    def test_unknown_service_is_ignored(self, mock_get):
+        self.assertEqual(search_movies(provider="NotAService")["results"], [])
+        mock_get.assert_not_called()
+
+    @patch("movies.services.requests.get")
+    def test_services_with_several_plan_tiers_match_any_of_them(self, mock_get):
+        mock_get.return_value = fake_response(FAKE_SEARCH)
+        search_movies(provider="Peacock")
+        self.assertEqual(mock_get.call_args.kwargs["params"]["with_watch_providers"], "386|387")
 
 class BuildSearchResultsTest(TestCase):
     def test_results_become_simple_dicts(self):
