@@ -164,7 +164,7 @@ def step_rating_results(context):
     assert path == '/discover/movie'
     assert params['vote_average.gte'] == 7.0
 
-# --- multiple filters ---
+# --- multiple filters --- (currently ignores streaming service filter)
 @then('only titles matching all selected filters should be displayed')
 def step_multiple_filters(context):
     submit_search(context, context.filters)
