@@ -127,23 +127,22 @@ def step_year_results(context):
 # --- Filter results by streaming service ---
 @when('I select a streaming service filter')
 def step_select_streaming_service(context):
-    context.filters['service'] = 'Netflix'
+    context.filters['provider'] = 'Netflix'
 
 @then('only titles available on the selected streaming service should be displayed')
 def step_streaming_results(context):
     submit_search(context, context.filters)
 
+    html = context.response.content.decode()
     assert context.response.status_code == 200
-
-    # search service should be called when provider filtering is implemented
-    assert context.api_mock.called, (
-        "Streaming service filter was not passed to the search service. "
-        "Backend support for provider filtering is missing."
-    )
+    assert 'Inception' in html
 
     path, params = context.api_mock.call_args.args
 
-    assert params['with_watch_providers'] == 'Netflix'
+    assert path == '/discover/movie'
+    assert params['with_watch_providers'] == 8
+    assert params['watch_region'] == 'US'
+    assert params['with_watch_monetization_types'] == 'flatrate'
 
 # --- Filter results by rating ---
 @when('I select a rating filter')
@@ -164,11 +163,10 @@ def step_rating_results(context):
     assert path == '/discover/movie'
     assert params['vote_average.gte'] == 7.0
 
-# --- multiple filters --- (currently ignores streaming service filter)
+# --- Multiple filters ---
 @then('only titles matching all selected filters should be displayed')
 def step_multiple_filters(context):
     submit_search(context, context.filters)
-
     html = context.response.content.decode()
 
     assert context.response.status_code == 200
@@ -179,4 +177,6 @@ def step_multiple_filters(context):
     assert path == '/discover/movie'
     assert params['with_genres'] == 28
     assert params['primary_release_year'] == '2010'
+    assert params['with_watch_providers'] == 8
+    assert params['watch_region'] == 'US'
     assert params['vote_average.gte'] == 7.0
