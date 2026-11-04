@@ -51,6 +51,13 @@
                 </p>
             {% endif %}
 
+            {% if provider_ignored %}
+                <p>
+                    The streaming service filter only works when no title
+                    is entered, so it was not applied ot this search.
+                <p>
+            {% endif %}
+            
             {% if movies %}
                 <div class="movie-grid">
                     {% for movie in movies %}
