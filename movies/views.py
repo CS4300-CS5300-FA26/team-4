@@ -3,6 +3,7 @@ import requests
 
 from django.http import Http404, HttpResponseNotAllowed, JsonResponse
 from django.shortcuts import get_object_or_404, render
+from django.utils import timezone
 
 from .models import Movie, WatchlistItem
 from .services import build_movie_context, fetch_movie
@@ -11,10 +12,16 @@ from .services import build_movie_context, fetch_movie
 logger = logging.getLogger(__name__)
 
 
-# Query all movies from the database and render them in the movie_list.html template.
+# Query all movies from the database and render them
+# in the movie_list.html template.
 def movie_list(request):
     movies = Movie.objects.all()
-    return render(request, 'movies/movie_list.html', {'movies': movies})
+
+    return render(
+        request,
+        'movies/movie_list.html',
+        {'movies': movies}
+    )
 
 
 def add_to_watchlist(request, movie_id):
@@ -27,7 +34,10 @@ def add_to_watchlist(request, movie_id):
     if request.method != 'POST':
         return HttpResponseNotAllowed(['POST'])
 
-    movie = get_object_or_404(Movie, id=movie_id)
+    movie = get_object_or_404(
+        Movie,
+        id=movie_id
+    )
 
     watchlist_item, created = WatchlistItem.objects.get_or_create(
         user=request.user,
@@ -36,13 +46,91 @@ def add_to_watchlist(request, movie_id):
 
     if not created:
         return JsonResponse(
-            {'message': 'Movie is already in your watchlist.'},
+            {
+                'message':
+                'Movie is already in your watchlist.'
+            },
             status=200
         )
 
     return JsonResponse(
-        {'message': 'Movie added to your watchlist.'},
+        {
+            'message':
+            'Movie added to your watchlist.'
+        },
         status=201
+    )
+
+
+def update_watchlist_item(request, movie_id):
+    if not request.user.is_authenticated:
+        return JsonResponse(
+            {'error': 'Authentication required.'},
+            status=401
+        )
+
+    if request.method != 'POST':
+        return HttpResponseNotAllowed(['POST'])
+
+    movie = get_object_or_404(
+        Movie,
+        id=movie_id
+    )
+
+    watchlist_item = get_object_or_404(
+        WatchlistItem,
+        user=request.user,
+        movie=movie
+    )
+
+    watched = request.POST.get('watched')
+    rating = request.POST.get('rating')
+
+    if watched is not None:
+        watchlist_item.watched = watched.lower() in (
+            'true',
+            '1',
+            'yes',
+            'on'
+        )
+
+        if watchlist_item.watched:
+            watchlist_item.watched_at = timezone.now()
+        else:
+            watchlist_item.watched_at = None
+
+    if rating not in (None, ''):
+        try:
+            rating = int(rating)
+        except ValueError:
+            return JsonResponse(
+                {
+                    'error':
+                    'Rating must be a number.'
+                },
+                status=400
+            )
+
+        if rating < 1 or rating > 10:
+            return JsonResponse(
+                {
+                    'error':
+                    'Rating must be between 1 and 10.'
+                },
+                status=400
+            )
+
+        watchlist_item.personal_rating = rating
+
+    watchlist_item.save()
+
+    return JsonResponse(
+        {
+            'message': 'Watchlist item updated.',
+            'watched': watchlist_item.watched,
+            'rating': watchlist_item.personal_rating,
+        },
+        status=200
     )
 
 
@@ -50,28 +138,39 @@ def add_to_watchlist(request, movie_id):
 def movie_detail(request, tmdb_id):
     try:
         data = fetch_movie(tmdb_id)
+
     except RuntimeError:
         logger.error(
-            "TMDB_API_KEY is not configured; cannot load movie %s",
+            "TMDB_API_KEY is not configured; "
+            "cannot load movie %s",
             tmdb_id
         )
+
         return render(
             request,
             'movies/movie_detail.html',
             {'error': True},
             status=503
         )
+
     except requests.HTTPError as exc:
-        status = exc.response.status_code if exc.response is not None else None
+        status = (
+            exc.response.status_code
+            if exc.response is not None
+            else None
+        )
 
         if status == 404:
-            raise Http404("That movie was not found on TMDB.")
+            raise Http404(
+                "That movie was not found on TMDB."
+            )
 
         if status in (401, 403):
             logger.error(
                 "TMDB rejected the API key (HTTP %s)",
                 status
             )
+
             return render(
                 request,
                 'movies/movie_detail.html',
@@ -94,7 +193,9 @@ def movie_detail(request, tmdb_id):
             status=502
         )
 
-    saved_movie = Movie.objects.filter(tmdb_id=tmdb_id).first()
+    saved_movie = Movie.objects.filter(
+        tmdb_id=tmdb_id
+    ).first()
 
     in_watchlist = False
 

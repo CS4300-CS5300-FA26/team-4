@@ -32,7 +32,7 @@
 
                         <div>
                             {% if item.movie.tmdb_id %}
-                                <a href="{% url 'movie_detail' item.movie.tmdb_id %}">
+                                <a href="{% url 'movie_detail' item.movie.tmdb_id %}?from=watchlist">
                                     {{ item.movie.title }}
                                 </a>
                             {% else %}

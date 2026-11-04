@@ -11,9 +11,15 @@
 {% endblock %}
 
 {% block content %}
-    <a href="{% url 'movie_list' %}" class="back-link">
-        &larr; Back to Movies
-    </a>
+    {% if request.GET.from == "watchlist" %}
+        <a href="{% url 'home' %}" class="back-link">
+            &larr; Back to Watchlist
+        </a>
+    {% else %}
+        <a href="{% url 'movie_list' %}" class="back-link">
+            &larr; Back to Movies
+        </a>
+    {% endif %}
 
     {% if error %}
         <section class="error-message">
@@ -115,9 +121,15 @@
                     </form>
                 {% endif %}
 
-                <a href="{% url 'movie_list' %}" class="back-button">
-                    Back to Movie List
-                </a>
+                {% if request.GET.from == "watchlist" %}
+                    <a href="{% url 'home' %}" class="back-button">
+                        Back to Watchlist
+                    </a>
+                {% else %}
+                    <a href="{% url 'movie_list' %}" class="back-button">
+                        Back to Movie List
+                    </a>
+                {% endif %}
             </section>
         </article>
     {% endif %}
