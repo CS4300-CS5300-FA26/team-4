@@ -49,22 +49,18 @@ def step_submit_email(context, email):
 
 @then("I should see a message saying a password reset link has been sent")
 def step_reset_link_confirmation(context):
-    assert context.response.status_code == 302 or (
-        context.response.status_code == 200
-    )
+    assert context.response.status_code in (200, 302)
 
-    # if redirect
+    # follow the redirect if the password reset view redirects
     if context.response.status_code == 302:
         context.response = context.test.client.get(
             context.response.url
         )
 
-    # make sure page has password reset link message
     assert context.response.status_code == 200
     assert (
-        b"password reset" in context.response.content.lower()
-        or b"reset link" in context.response.content.lower()
-        or b"email" in context.response.content.lower()
+        b"sent instructions for resetting your password"
+        in context.response.content.lower()
     )
 
 @then("a password reset email should be sent to my email address")
@@ -123,12 +119,6 @@ def step_open_valid_reset_link(context):
     path = urlparse(link).path
     
     context.response = context.test.client.get(path, follow=True)
-
-    print("Reset link:", link)
-    print("Reset path:", path)
-    print("Status code:", context.response.status_code)
-    print("Response URL:", context.response.get("Location"))
-    print("Response content:", context.response.content[:500])
 
     assert context.response.status_code == 200, (
         f"Expected status 200, got {context.response.status_code}. "
