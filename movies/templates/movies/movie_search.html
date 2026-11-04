@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Search Movies | Personal Movie Watch List{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'movies/movie_search.css' %}">
+{% endblock %}
+
+{% block content %}
+    <section class="page-intro">
+        <p class="eyebrow">Find your next favorite</p>
+        <h1>Search movies</h1>
+        <p>Search by title, choose filters, or combine both.</p>
+    </section>
+
+    <form
+        class="search-form"
+        method="get"
+        action="{% url 'movie_search' %}"
+    >
+        {% for field in form %}
+            <div class="search-field">
+                {{ field.label_tag }}
+                {{ field }}
+                {{ field.errors }}
+            </div>
+        {% endfor %}
+
+        <div class="search-actions">
+            <button type="submit">Search</button>
+            <a href="{% url 'movie_search' %}">Clear filters</a>
+        </div>
+    </form>
+
+    {% if error %}
+        <section class="error-message" role="alert">
+            <h2>Search is unavailable</h2>
+            <p>{{ error }}</p>
+        </section>
+
+    {% elif searched %}
+        <section aria-labelledby="results-heading">
+            <h2 id="results-heading">Search results</h2>
+
+            {% if filtered %}
+                <p>
+                    Genre and rating filters apply to each page of
+                    title matches. Other pages may have more matches,
+                    even if this page is empty.
+                </p>
+            {% endif %}
+
+            {% if movies %}
+                <div class="movie-grid">
+                    {% for movie in movies %}
+                        <article class="movie">
+                            {% if movie.poster_url %}
+                                <img
+                                    class="movie-thumbnail"
+                                    src="{{ movie.poster_url }}"
+                                    alt="Poster for {{ movie.title }}"
+                                    loading="lazy"
+                                >
+                            {% else %}
+                                <div
+                                    class="movie-thumbnail poster-placeholder"
+                                    aria-hidden="true"
+                                >
+                                    Poster unavailable
+                                </div>
+                            {% endif %}
+
+                            <div class="movie-body">
+                                {% if movie.release_year %}
+                                    <p class="year">
+                                        {{ movie.release_year }}
+                                    </p>
+                                {% endif %}
+
+                                <h2>
+                                    <a href="{% url 'movie_detail' movie.tmdb_id %}?from=search&amp;search={{ search_params|urlencode }}">
+                                        {{ movie.title }}
+                                    </a>
+                                </h2>
+
+                                {% if movie.rating != None %}
+                                    <p>
+                                        Rating:
+                                        {{ movie.rating|floatformat:1 }}/10
+                                    </p>
+                                {% endif %}
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty">
+                    <h2>No movies found on this page</h2>
+                    <p>
+                        Try a different title, adjust your filters,
+                        or check another page.
+                    </p>
+                </div>
+            {% endif %}
+
+            {% if previous_url or next_url %}
+                <nav
+                    class="search-pagination"
+                    aria-label="Search result pages"
+                >
+                    {% if previous_url %}
+                        <a class="button" href="{{ previous_url }}">
+                            Previous
+                        </a>
+                    {% endif %}
+
+                    <span>
+                        Page {{ page }}
+                        {% if total_pages %}of {{ total_pages }}{% endif %}
+                    </span>
+
+                    {% if next_url %}
+                        <a class="button" href="{{ next_url }}">
+                            Next
+                        </a>
+                    {% endif %}
+                </nav>
+            {% endif %}
+        </section>
+
+    {% elif not form.errors %}
+        <section class="empty">
+            <h2>What would you like to watch?</h2>
+            <p>
+                Enter a movie title or choose a filter to get started.
+            </p>
+        </section>
+    {% endif %}
+{% endblock %}
+
+{% block footer %}
+    <p>
+        This product uses the TMDB API but is not endorsed
+        or certified by TMDB.
+    </p>
+{% endblock %}
