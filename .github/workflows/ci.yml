@@ -28,7 +28,14 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r requirements.txt pylint flake8
+
+      - name: Run PyLint and Flake8 Scans
+        run: |
+          echo "Starting Flake8 Scan..."
+          flake8 . --count --show-source --statistics || true
+          echo "Starting PyLint Scan..."
+          pylint $(git ls-files '*.py') || true
 
       - name: Run Pytest & Report Coverage to Console
         env:
