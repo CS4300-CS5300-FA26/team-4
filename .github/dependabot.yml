@@ -12,3 +12,7 @@ updates:
     labels:
       - "dependencies"
       - "security"
+    ignore:
+      - dependency-name: "Django"
+        update-types:
+          - "version-update:semver-major"
