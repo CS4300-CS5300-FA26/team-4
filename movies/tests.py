@@ -1507,6 +1507,16 @@ class RecommendedMoviesTest(TestCase):
         self.assertEqual(result["total_results"], 3)
 
     @patch("movies.services.requests.get")
+    def test_a_repeat_within_one_favourites_reply_counts_once(self, mock_get):
+        mock_get.side_effect = recommendations_by_seed({
+            1: {"results": [movie(100, 5.0), movie(100, 5.0), movie(100, 5.0)]},
+            2: {"results": [movie(200, 6.0), movie(300, 9.0)]},
+            3: {"results": [movie(200, 6.0)]},
+        })
+        result = recommended_movies([1, 2, 3])
+        self.assertEqual([m["id"] for m in result["results"]], [200, 300, 100])
+
+    @patch("movies.services.requests.get")
     def test_duplicate_and_text_ids_are_handled(self, mock_get):
         mock_get.side_effect = recommendations_by_seed({7: {"results": []}})
         recommended_movies([7, "7", 7])

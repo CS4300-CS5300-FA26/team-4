@@ -232,12 +232,16 @@ def recommended_movies(tmdb_ids, exclude_ids=(), limit=20):
             raise
         
         results = data.get("results") if isinstance(data, dict) else None
+        counted = set()
         for movie in results if isinstance(results, list) else []:
             if not isinstance(movie, dict):
                 continue
             movie_id = movie.get("id")
             if isinstance(movie_id, bool) or not isinstance(movie_id, int) or movie_id in skip:
                 continue
+            if movie_id in counted:
+                continue
+            counted.add(movie_id)
             if movie_id in found:
                 found[movie_id][1] += 1
             else:
