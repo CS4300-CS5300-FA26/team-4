@@ -206,7 +206,7 @@ def trending_movies(time_window='week', page=1):
 # Unique, positive whole-number TMDB ids in the order given. Anything else is dropped
 def _clean_ids(ids):
     cleaned = []
-    for value in ids if isinstance(ids, (list, tuple, set)) else []:
+    for value in ids if isinstance(ids, (list, tuple)) else []:
         if isinstance(value, bool):
             continue
         if isinstance(value, int):
