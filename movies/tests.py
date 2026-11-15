@@ -5,6 +5,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
+from decimal import Decimal
 
 from .models import Movie, WatchlistItem
 from .services import (
@@ -1485,7 +1486,7 @@ class RecommendedMoviesTest(TestCase):
 
     @patch("movies.services.requests.get")
     def test_no_favourites_means_no_tmdb_calls(self, mock_get):
-        for empty in ([], None, "x", [None, "abc", -4, 0, True, 2.5]):
+        for empty in ([], None, "x", [None, "abc", -4, 0, True, 2.5, Decimal("2.5"), "2.5", "-3", "\u00b2"]):
             self.assertEqual(recommended_movies(empty)["results"], [])
         mock_get.assert_not_called()
 

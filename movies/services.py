@@ -2,6 +2,7 @@ import requests
 from django.conf import settings
 import math
 
+
 #TMDB identifies genres by number. These are TMDB's movie genre ids.
 GENRE_IDS = {
     "action": 28, "adventure": 12, "animation": 16, "comedy": 35, "crime": 80, 
@@ -206,8 +207,14 @@ def trending_movies(time_window='week', page=1):
 def _clean_ids(ids):
     cleaned = []
     for value in ids if isinstance(ids, (list, tuple, set)) else []:
-        if isinstance(value, (bool, float)):
+        if isinstance(value, bool):
             continue
+        if isinstance(value, int):
+            number = value
+        elif isinstance(value, str) and value.strip().isascii() and value.strip().isdigit():
+            number = int(value.strip())     # "7" is fine; "2.5" or "-3" is not an id
+        else: 
+            continue    # floats, decimals and everything else are rejected, not truncated
         try:
             number = int(value)
         except (TypeError, ValueError):
