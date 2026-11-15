@@ -218,8 +218,9 @@ def _clean_ids(ids):
 
 # Movies TMDB recommends based on titles the user rated highly
 def recommended_movies(tmdb_ids, exclude_ids=(), limit=20):
-    seeds = _clean_ids(tmdb_ids)[:MAX_SEEDS]
-    skip = set(seeds) | set(_clean_ids(exclude_ids))
+    favorites = _clean_ids(tmdb_ids)
+    seeds = favorites[:MAX_SEEDS]   #only these are sent to TMDB
+    skip = set(favorites) | set(_clean_ids(exclude_ids))    #but none of them are ever recommended
     limit = limit if isinstance(limit, int) and not isinstance(limit, bool) and limit > 0 else 20
 
     found = {}  # TMDB id => [movie, how many favorites it was recommended for]

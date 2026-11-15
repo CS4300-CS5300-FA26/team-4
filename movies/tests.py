@@ -1523,6 +1523,16 @@ class RecommendedMoviesTest(TestCase):
         self.assertEqual(mock_get.call_count, 1)
 
     @patch("movies.services.requests.get")
+    def test_favourites_beyond_the_seed_limit_are_still_excluded(self, mock_get):
+        mock_get.side_effect = recommendations_by_seed({
+            1: {"results": [movie(6), movie(7), movie(50)]},
+            2: {"results": []}, 3: {"results": []}, 4: {"results": []}, 5: {"results": []},
+        })
+        result = recommended_movies([1, 2, 3, 4, 5, 6, 7])
+        self.assertEqual(mock_get.call_count, 5)
+        self.assertEqual([m["id"] for m in result["results"]], [50])
+
+    @patch("movies.services.requests.get")
     def test_output_is_limited(self, mock_get):
         mock_get.side_effect = recommendations_by_seed({1: {"results": [movie(n) for n in range(100, 130)]}})
         self.assertEqual(len(recommended_movies([1])["results"]), 20)
