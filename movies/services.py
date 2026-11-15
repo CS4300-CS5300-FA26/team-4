@@ -23,6 +23,8 @@ CAST_LIMIT = 10
 WATCH_REGION = 'US' #Steaming availability differs by country. We only show US results for now 
 MIN_VOTES = 50  # ignores movies with a handful of votes, so rating mean something
 MAX_PAGE = 500 #TMDB rejects page numbers above 500
+TIME_WINDOWS = ("day", "week")  #TMDB's two trending windows
+MAX_SEEDS = 5 # how many of the user's movies we ask TMDB about (one request each)
 
 #-- Movie Details ---------------------------------------------------------------------------
 #Ask TMDB for one movie and return the raw anser
@@ -184,3 +186,62 @@ def build_search_results(data):
             "rating": item.get("vote_average"),
         })
     return movies
+
+# --- Popular titles ------------------------------------------------------------
+
+# 'day' or 'week'; anything else becomes 'week'
+def _clean_time_window(window):
+    text = str(window or "").strip().lower()
+    return text if text in TIME_WINDOWS else "week"
+
+# Movies that are popular right now, from TMDB's trending list. Returns taw JSON. Pass to build_search_results
+def trending_movies(time_window='week', page=1):
+    window = _clean_time_window(time_window)
+    return _get(f"/trending/movie/{window}", {"page": _clean_page(page)})
+
+
+# --- Recommendations -------------------------------------------------------
+
+# Unique, positive whole-number TMDB ids in the order given. Anything else is dropped
+def _clean_ids(ids):
+    cleaned = []
+    for value in ids if isinstance(ids, (list, tuple, set)) else []:
+        if isinstance(value, (bool, float)):
+            continue
+        try:
+            number = int(value)
+        except (TypeError, ValueError):
+            continue
+        if number > 0 and number not in cleaned:
+            cleaned.append(number)
+    return cleaned
+
+# Movies TMDB recommends based on titles the user rated highly
+def recommended_movies(tmdb_ids, exclude_ids=(), limit=20):
+    seeds = _clean_ids(tmdb_ids)[:MAX_SEEDS]
+    skip = set(seeds) | set(_clean_ids(exclude_ids))
+    limit = limit if isinstance(limit, int) and not isinstance(limit, bool) and limit > 0 else 20
+
+    found = {}  # TMDB id => [movie, how many favorites it was recommended for]
+    for seed in seeds:
+        try:
+            data = _get(f"/movie/{seed}/recommendations", {"page": 1})
+        except requests.HTTPError as exc:
+            if exc.response is not None and exc.response.status_code == 404:
+                continue # TMDB doesn't know this movie; the other favorites still count
+            raise
+        
+        results = data.get("results") if isinstance(data, dict) else None
+        for movie in results if isinstance(results, list) else []:
+            if not isinstance(movie, dict):
+                continue
+            movie_id = movie.get("id")
+            if isinstance(movie_id, bool) or not isinstance(movie_id, int) or movie_id in skip:
+                continue
+            if movie_id in found:
+                found[movie_id][1] += 1
+            else:
+                found[movie_id] = [movie, 1]
+    ranked = sorted(found.values(), key=lambda pair: (-pair[1], -_number(pair[0].get("vote_average"))))
+    movies = [movie for movie, _ in ranked][:limit]
+    return {"page": 1, "results": movies, "total_results": len(ranked)}

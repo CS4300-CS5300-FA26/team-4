@@ -12,6 +12,8 @@ from .services import (
     fetch_movie,
     build_search_results,
     search_movies,
+    trending_movies,
+    recommended_movies,
 )
 
 
@@ -1395,3 +1397,164 @@ class CleanRatingTest(TestCase):
             self.assertIsNone(
                 _clean_rating(bad)
             )
+
+
+@override_settings(TMDB_API_KEY="test-key")
+class TrendingMoviesTest(TestCase):
+    @patch("movies.services.requests.get")
+    def test_uses_the_trending_endpoint_with_key_window_and_page(self, mock_get):
+        mock_get.return_value = fake_response(FAKE_SEARCH)
+        trending_movies(time_window="day", page=2)
+        args, kwargs = mock_get.call_args
+        self.assertTrue(args[0].endswith("/trending/movie/day"))
+        self.assertEqual(kwargs["params"]["api_key"], "test-key")
+        self.assertEqual(kwargs["params"]["page"], 2)
+        self.assertEqual(kwargs["timeout"], 10)
+
+    @patch("movies.services.requests.get")
+    def test_defaults_to_this_week_page_one(self, mock_get):
+        mock_get.return_value = fake_response(FAKE_SEARCH)
+        trending_movies()
+        args, kwargs = mock_get.call_args
+        self.assertTrue(args[0].endswith("/trending/movie/week"))
+        self.assertEqual(kwargs["params"]["page"], 1)
+
+    @patch("movies.services.requests.get")
+    def test_odd_window_or_page_is_corrected_not_sent(self, mock_get):
+        mock_get.return_value = fake_response(FAKE_SEARCH)
+        for given, expected in (("month", "week"), (None, "week"), ("", "week"), (" DAY ", "day"),
+                                ("day/../x", "week")):
+            trending_movies(time_window=given)
+            self.assertTrue(mock_get.call_args.args[0].endswith("/trending/movie/" + expected))
+        for given, sent in (("abc", 1), (0, 1), (-3, 1), (99999, 500), ("4", 4)):
+            trending_movies(page=given)
+            self.assertEqual(mock_get.call_args.kwargs["params"]["page"], sent)
+
+    @override_settings(TMDB_API_KEY="")
+    @patch("movies.services.requests.get")
+    def test_missing_key_gives_a_clear_error(self, mock_get):
+        with self.assertRaises(RuntimeError):
+            trending_movies()
+        mock_get.assert_not_called()
+
+    @patch("movies.services.requests.get")
+    def test_tmdb_error_raises(self, mock_get):
+        mock_get.return_value = fake_response(status=500)
+        with self.assertRaises(requests.HTTPError):
+            trending_movies()
+
+    @patch("movies.services.requests.get")
+    def test_reply_can_be_turned_into_cards_for_the_page(self, mock_get):
+        mock_get.return_value = fake_response(FAKE_SEARCH)
+        cards = build_search_results(trending_movies())
+        self.assertEqual([c["tmdb_id"] for c in cards], [27205, 1, 2])
+        self.assertEqual(cards[0]["title"], "Inception")
+
+
+def recommendations_by_seed(replies):
+    """A fake requests.get that answers each /movie/<id>/recommendations from a dict."""
+    def fake_get(url, **kwargs):
+        seed = int(url.split("/movie/")[1].split("/")[0])
+        reply = replies[seed]
+        return reply if isinstance(reply, Mock) else fake_response(reply)
+    return fake_get
+
+
+def movie(movie_id, rating=7.0):
+    return {"id": movie_id, "title": "Movie %d" % movie_id, "vote_average": rating}
+
+
+@override_settings(TMDB_API_KEY="test-key")
+class RecommendedMoviesTest(TestCase):
+    @patch("movies.services.requests.get")
+    def test_asks_tmdb_about_each_favourite(self, mock_get):
+        mock_get.side_effect = recommendations_by_seed({10: {"results": []}, 20: {"results": []}})
+        recommended_movies([10, 20])
+        urls = [call.args[0] for call in mock_get.call_args_list]
+        self.assertEqual(len(urls), 2)
+        self.assertTrue(urls[0].endswith("/movie/10/recommendations"))
+        self.assertTrue(urls[1].endswith("/movie/20/recommendations"))
+        self.assertEqual(mock_get.call_args.kwargs["params"]["api_key"], "test-key")
+        self.assertEqual(mock_get.call_args.kwargs["timeout"], 10)
+
+    @patch("movies.services.requests.get")
+    def test_only_the_first_few_favourites_are_used(self, mock_get):
+        mock_get.side_effect = recommendations_by_seed({n: {"results": []} for n in range(1, 11)})
+        recommended_movies(list(range(1, 11)))
+        self.assertEqual(mock_get.call_count, 5)
+
+    @patch("movies.services.requests.get")
+    def test_no_favourites_means_no_tmdb_calls(self, mock_get):
+        for empty in ([], None, "x", [None, "abc", -4, 0, True, 2.5]):
+            self.assertEqual(recommended_movies(empty)["results"], [])
+        mock_get.assert_not_called()
+
+    @patch("movies.services.requests.get")
+    def test_favourites_and_excluded_movies_are_never_recommended(self, mock_get):
+        mock_get.side_effect = recommendations_by_seed(
+            {10: {"results": [movie(10), movie(20), movie(30), movie(40)]}})
+        result = recommended_movies([10], exclude_ids=[30, "abc"])
+        self.assertEqual([m["id"] for m in result["results"]], [20, 40])
+
+    @patch("movies.services.requests.get")
+    def test_a_movie_recommended_for_several_favourites_ranks_first(self, mock_get):
+        mock_get.side_effect = recommendations_by_seed({
+            1: {"results": [movie(100, 9.0), movie(200, 6.0)]},
+            2: {"results": [movie(200, 6.0), movie(300, 8.0)]},
+        })
+        result = recommended_movies([1, 2])
+        self.assertEqual([m["id"] for m in result["results"]], [200, 100, 300])
+        self.assertEqual(result["total_results"], 3)
+
+    @patch("movies.services.requests.get")
+    def test_duplicate_and_text_ids_are_handled(self, mock_get):
+        mock_get.side_effect = recommendations_by_seed({7: {"results": []}})
+        recommended_movies([7, "7", 7])
+        self.assertEqual(mock_get.call_count, 1)
+
+    @patch("movies.services.requests.get")
+    def test_output_is_limited(self, mock_get):
+        mock_get.side_effect = recommendations_by_seed({1: {"results": [movie(n) for n in range(100, 130)]}})
+        self.assertEqual(len(recommended_movies([1])["results"]), 20)
+        self.assertEqual(len(recommended_movies([1], limit=3)["results"]), 3)
+        self.assertEqual(len(recommended_movies([1], limit=-1)["results"]), 20)
+
+    @patch("movies.services.requests.get")
+    def test_a_movie_tmdb_does_not_know_is_skipped_but_others_still_count(self, mock_get):
+        mock_get.side_effect = recommendations_by_seed({
+            1: fake_response(status=404), 2: {"results": [movie(50)]}})
+        result = recommended_movies([1, 2])
+        self.assertEqual([m["id"] for m in result["results"]], [50])
+
+    @patch("movies.services.requests.get")
+    def test_other_tmdb_errors_are_not_hidden(self, mock_get):
+        mock_get.side_effect = recommendations_by_seed({1: fake_response(status=500)})
+        with self.assertRaises(requests.HTTPError):
+            recommended_movies([1])
+        mock_get.side_effect = requests.ConnectionError
+        with self.assertRaises(requests.ConnectionError):
+            recommended_movies([1])
+
+    @override_settings(TMDB_API_KEY="")
+    @patch("movies.services.requests.get")
+    def test_missing_key_gives_a_clear_error(self, mock_get):
+        with self.assertRaises(RuntimeError):
+            recommended_movies([1])
+        mock_get.assert_not_called()
+
+    @patch("movies.services.requests.get")
+    def test_odd_tmdb_data_is_skipped_not_crashed_on(self, mock_get):
+        mock_get.side_effect = recommendations_by_seed({
+            1: {"results": [None, "x", {"id": "9"}, {"id": True}, {"id": [1]}, {"title": "no id"}, movie(5)]},
+            2: ["not", "a", "dict"],
+            3: {"results": None},
+            4: {"results": "oops"},
+        })
+        result = recommended_movies([1, 2, 3, 4])
+        self.assertEqual([m["id"] for m in result["results"]], [5])
+
+    @patch("movies.services.requests.get")
+    def test_result_can_be_turned_into_cards_for_the_page(self, mock_get):
+        mock_get.side_effect = recommendations_by_seed({1: {"results": [FAKE_SEARCH["results"][0]]}})
+        cards = build_search_results(recommended_movies([1]))
+        self.assertEqual(cards[0]["title"], "Inception")
