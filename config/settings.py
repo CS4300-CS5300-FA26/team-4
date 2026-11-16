@@ -56,7 +56,7 @@ if ON_AZURE:
         "https",
     )
     
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'testserver']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 azure_hostname = os.environ.get("WEBSITE_HOSTNAME")
 if azure_hostname:
     ALLOWED_HOSTS.append(azure_hostname)

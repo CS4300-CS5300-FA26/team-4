@@ -19,19 +19,17 @@ def step_click_forgot_password(context):
 @given('I have an account with the email "{email}"')
 def step_account_with_email(context, email):
 
-    # Check whether this test user already exists
-    context.user = User.objects.filter(email__iexact=email).first()
+    # Generate a unique email for every scenario
+    local, domain = email.split("@", 1)
+    unique_email = f"{local}+{uuid.uuid4().hex[:8]}@{domain}"
 
-    if context.user is None:
-        context.user = User.objects.create_user(
-            username=f"reset_user_{uuid.uuid4().hex[:8]}",
-            email=email,
-            password="OldPassword123!"
-        )
-    else:
-        # Reset the password so the test starts with a known password
-        context.user.set_password("OldPassword123!")
-        context.user.save()
+    context.original_email = email
+
+    context.user = User.objects.create_user(
+        username=f"reset_user_{uuid.uuid4().hex[:8]}",
+        email=unique_email,
+        password="OldPassword123!"
+    )
 
     context.old_password = "OldPassword123!"
 
@@ -52,7 +50,13 @@ def step_submit_registered_email(context):
 # can test registered or unregistered email
 @when('I submit the email "{email}"')
 def step_submit_email(context, email):
+
+    # Use the unique registered email when appropriate
+    if email == context.original_email:
+        email = context.user.email
+
     context.submitted_email = email
+
     context.response = context.test.client.post(
         reverse("password_reset"),
         {"email": email}
@@ -81,10 +85,15 @@ def step_email_sent_to_user(context):
 
 @then('a password reset email should be sent to "{email}"')
 def step_email_sent_to_address(context, email):
+
+    if email == context.original_email:
+        email = context.user.email
+
     matching_emails = [
         message for message in mail.outbox
         if email in message.to
-    ] # check emails that match the user we sent the email to
+    ]
+
     assert matching_emails, (
         f"No password reset email was sent to {email}"
     )
@@ -207,7 +216,7 @@ def submit_registered_and_unregistered_reset_requests(context):
     # submit request using an unregistered email
     unregistered_response = context.test.client.post(
         reverse("password_reset"),
-        {"email": "notregistered@example.com"},
+        {"email": f"notregistered+{uuid.uuid4().hex[:8]}@example.com"}, # make sure email is unique
         follow=True
     )
 
