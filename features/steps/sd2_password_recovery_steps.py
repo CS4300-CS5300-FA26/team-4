@@ -4,6 +4,7 @@ from behave import given, when, then
 from django.contrib.auth import get_user_model
 from django.core import mail
 from django.urls import reverse
+import uuid
 
 User = get_user_model()
 
@@ -17,11 +18,21 @@ def step_click_forgot_password(context):
 
 @given('I have an account with the email "{email}"')
 def step_account_with_email(context, email):
-    context.user = User.objects.create_user(
-        username=f"reset_user_{User.objects.count()}",
-        email=email,
-        password="OldPassword123!"
-    )
+
+    # Check whether this test user already exists
+    context.user = User.objects.filter(email__iexact=email).first()
+
+    if context.user is None:
+        context.user = User.objects.create_user(
+            username=f"reset_user_{uuid.uuid4().hex[:8]}",
+            email=email,
+            password="OldPassword123!"
+        )
+    else:
+        # Reset the password so the test starts with a known password
+        context.user.set_password("OldPassword123!")
+        context.user.save()
+
     context.old_password = "OldPassword123!"
 
 @given("I am on the password reset page")
@@ -172,3 +183,56 @@ def step_old_password_rejected(context):
         password=context.old_password
     )
     assert not logged_in, "The old password still works"
+
+# --- Account enumeration protection ---
+@when('I submit password reset requests for registered and unregistered email addresses')
+def submit_registered_and_unregistered_reset_requests(context):
+
+    # record the number of emails before the registered request
+    emails_before = len(mail.outbox)
+
+    # submit request using the registered user's email
+    registered_response = context.test.client.post(
+        reverse("password_reset"),
+        {"email": context.user.email},
+        follow=True
+    )
+
+    # verify that the registered user received an email
+    assert len(mail.outbox) == emails_before + 1
+
+    # clear the email outbox
+    mail.outbox.clear()
+
+    # submit request using an unregistered email
+    unregistered_response = context.test.client.post(
+        reverse("password_reset"),
+        {"email": "notregistered@example.com"},
+        follow=True
+    )
+
+    # save both responses for comparison
+    context.registered_response = registered_response
+    context.unregistered_response = unregistered_response
+
+@then('both requests should receive indistinguishable responses')
+def check_indistinguishable_responses(context):
+
+    registered = context.registered_response
+    unregistered = context.unregistered_response
+
+    # compare HTTP status codes
+    assert registered.status_code == unregistered.status_code
+
+    # compare redirect behavior
+    assert registered.redirect_chain == unregistered.redirect_chain
+
+    # compare response page content
+    assert registered.content == unregistered.content
+
+@then('no password reset email should be sent for the unregistered address')
+def check_no_email_for_unregistered_address(context):
+
+    assert len(mail.outbox) == 0, (
+        "An email was sent to an unregistered address"
+    )

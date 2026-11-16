@@ -42,7 +42,7 @@ def step_impl(context):
 @given('I am on the login page')
 def step_impl(context):
     context.response = context.test.client.get(reverse('login'))
-    context.test.assertEqual(context.response.status_code, 200)
+    assert context.response.status_code == 200
 
 @when('I submit my correct credentials')
 def step_impl(context):

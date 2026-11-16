@@ -56,7 +56,7 @@ if ON_AZURE:
         "https",
     )
     
-ALLOWED_HOSTS = ["localhost", "127.0.0.1",]
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'testserver']
 azure_hostname = os.environ.get("WEBSITE_HOSTNAME")
 if azure_hostname:
     ALLOWED_HOSTS.append(azure_hostname)
@@ -216,10 +216,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'login'
 
-# If running locally or in CI (DEBUG=True), print emails to the console.
-# In production (DEBUG=False), route through an SMTP server.
+# Use the in-memory email backend locally and in CI.
+# This allows tests to inspect sent emails using mail.outbox.
+# In production, use SMTP.
 if DEBUG:
-    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+    EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'
 else:
     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
     EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
@@ -227,4 +228,7 @@ else:
     EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
     EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
     EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
-    DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'moviewatchlist8@gmail.com')
+    DEFAULT_FROM_EMAIL = os.environ.get(
+        'DEFAULT_FROM_EMAIL',
+        'moviewatchlist8@gmail.com'
+    )

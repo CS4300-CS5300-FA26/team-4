@@ -29,3 +29,9 @@ Scenario: Request a password reset with a registered email
     Then my password should be updated successfully
     And I should be able to log in using my new password
     And I should not be able to log in using my old password
+
+Scenario: Password reset does not reveal whether an email is registered
+    Given I have an account with the email "registered@example.com"
+    When I submit password reset requests for registered and unregistered email addresses
+    Then both requests should receive indistinguishable responses
+    And no password reset email should be sent for the unregistered address
