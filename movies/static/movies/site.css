@@ -487,6 +487,23 @@ button:disabled {
     font-size: 0.9rem;
 }
 
+.watchlist-remove {
+    padding: 0.35rem 0.75rem;
+    margin-top: 0.5rem;
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.watchlist-remove:hover {
+    background: #fff1f3;
+    color: #a32942;
+    border-color: #a32942;
+}
+
 .update-message {
     margin: 0.5rem 0 0;
     color: var(--muted);

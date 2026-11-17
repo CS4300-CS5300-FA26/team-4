@@ -97,6 +97,48 @@
                                         {{ movie.rating|floatformat:1 }}/10
                                     </p>
                                 {% endif %}
+
+                                {% if user.is_authenticated %}
+                                    <form
+                                        class="watchlist-add-form"
+                                        method="post"
+                                        action="{% url 'add_search_movie_to_watchlist' movie.tmdb_id %}"
+                                        data-login-url="{% url 'login' %}"
+                                    >
+                                        {% csrf_token %}
+
+                                        <span
+                                            class="watchlist-button-wrapper"
+                                            {% if movie.in_watchlist %}
+                                                title="Already saved to your watchlist"
+                                            {% endif %}
+                                        >
+                                            <button
+                                                type="submit"
+                                                {% if movie.in_watchlist %}
+                                                    disabled
+                                                    aria-label="Added to Watchlist — already saved"
+                                                {% endif %}
+                                            >
+                                                {% if movie.in_watchlist %}
+                                                    Added to Watchlist
+                                                {% else %}
+                                                    Add to Watchlist
+                                                {% endif %}
+                                            </button>
+                                        </span>
+
+                                        <p
+                                            class="watchlist-message"
+                                            role="status"
+                                            aria-live="polite"
+                                        ></p>
+                                    </form>
+                                {% else %}
+                                    <a href="{% url 'login' %}?next={{ request.get_full_path|urlencode }}">
+                                        Log in to add to your watchlist
+                                    </a>
+                                {% endif %}
                             </div>
                         </article>
                     {% endfor %}
@@ -151,4 +193,8 @@
         This product uses the TMDB API but is not endorsed
         or certified by TMDB.
     </p>
+{% endblock %}
+
+{% block scripts %}
+    <script src="{% static 'movies/watchlist.js' %}"></script>
 {% endblock %}

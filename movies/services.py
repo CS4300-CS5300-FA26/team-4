@@ -121,6 +121,13 @@ def _get(path, params):
     )
     response.raise_for_status()
     return response.json()
+
+# Get this week's trending movies from TMDB.
+def fetch_trending_movies():
+    return _get(
+        "/trending/movie/week",
+        {"language": "en-US"},
+    )
     
 #Find movies by title and/or genre, year and minimum rating.
 def search_movies(query="", genre=None, year=None, min_rating=None, page=1, provider=None):

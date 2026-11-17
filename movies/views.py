@@ -5,6 +5,7 @@ from django.http import Http404, HttpResponseNotAllowed, JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.utils import timezone
+from django.db import transaction
 
 from .models import Movie, WatchlistItem
 from .services import (
@@ -12,6 +13,7 @@ from .services import (
     build_movie_context,
     build_search_results,
     fetch_movie,
+    fetch_trending_movies,
     search_movies,
 )
 from .forms import MovieSearchForm
@@ -23,12 +25,64 @@ logger = logging.getLogger(__name__)
 # Query all movies from the database and render them
 # in the movie_list.html template.
 def movie_list(request):
-    movies = Movie.objects.all()
+    context = {
+        'movies': [],
+    }
+
+    try:
+        data = fetch_trending_movies()
+
+    except RuntimeError:
+        context['error'] = (
+            'Trending movies are unavailable right now. '
+            'Please try again later.'
+        )
+
+        return render(
+            request,
+            'movies/movie_list.html',
+            context,
+            status=503,
+        )
+
+    except requests.RequestException:
+        context['error'] = (
+            "We couldn't load trending movies. "
+            "Please try again."
+        )
+
+        return render(
+            request,
+            'movies/movie_list.html',
+            context,
+            status=502,
+        )
+
+    movies = build_search_results(data)
+
+    # Check which trending movies the user has already saved.
+    saved_tmdb_ids = set()
+
+    if request.user.is_authenticated:
+        saved_tmdb_ids = set(
+            WatchlistItem.objects.filter(
+                user=request.user,
+                movie__tmdb_id__in=[
+                    movie['tmdb_id']
+                    for movie in movies
+                ],
+            ).values_list('movie__tmdb_id', flat=True)
+        )
+
+    for movie in movies:
+        movie['in_watchlist'] = movie['tmdb_id'] in saved_tmdb_ids
+
+    context['movies'] = movies
 
     return render(
         request,
         'movies/movie_list.html',
-        {'movies': movies}
+        context,
     )
 
 def movie_search(request):
@@ -91,6 +145,23 @@ def movie_search(request):
 
             context['movies'] = build_search_results(data)
 
+            # Check which search results are already in this user's watchlist.
+            saved_tmdb_ids = set()
+
+            if request.user.is_authenticated:
+                saved_tmdb_ids = set(
+                    WatchlistItem.objects.filter(
+                        user=request.user,
+                        movie__tmdb_id__in=[
+                            movie['tmdb_id']
+                            for movie in context['movies']
+                        ],
+                    ).values_list('movie__tmdb_id', flat=True)
+                )
+
+            for movie in context['movies']:
+                movie['in_watchlist'] = movie['tmdb_id'] in saved_tmdb_ids
+
             try:
                 total_pages = max(
                     0,
@@ -123,6 +194,88 @@ def movie_search(request):
         request,
         'movies/movie_search.html',
         context,
+    )
+
+def add_search_movie_to_watchlist(request, tmdb_id):
+    if not request.user.is_authenticated:
+        return JsonResponse(
+            {'error': 'Authentication required.'},
+            status=401,
+        )
+
+    if request.method != 'POST':
+        return HttpResponseNotAllowed(['POST'])
+
+    # Reuse the movie if it is already in our database.
+    movie = Movie.objects.filter(tmdb_id=tmdb_id).first()
+
+    if movie is None:
+        try:
+            data = fetch_movie(tmdb_id)
+
+        except RuntimeError:
+            return JsonResponse(
+                {'error': 'Movie details are unavailable right now.'},
+                status=503,
+            )
+
+        except requests.HTTPError as exc:
+            status = (
+                exc.response.status_code
+                if exc.response is not None
+                else None
+            )
+
+            if status == 404:
+                return JsonResponse(
+                    {'error': 'This movie could not be found.'},
+                    status=404,
+                )
+
+            return JsonResponse(
+                {'error': 'Unable to load this movie. Please try again.'},
+                status=502,
+            )
+
+        except requests.RequestException:
+            return JsonResponse(
+                {'error': 'Unable to reach TMDB. Please try again.'},
+                status=502,
+            )
+
+        # Use movie information fetched by our server
+        details = build_movie_context(data)
+        year = details.get('release_year') or ''
+
+        movie_defaults = {
+            'title': details.get('title') or 'Untitled movie',
+            'overview': details.get('overview') or '',
+            'poster_url': details.get('poster_url') or '',
+            'release_year': int(year) if year.isdigit() else None,
+        }
+
+    # Save the movie and watchlist entry together.
+    with transaction.atomic():
+        if movie is None:
+            movie, _ = Movie.objects.get_or_create(
+                tmdb_id=tmdb_id,
+                defaults=movie_defaults,
+            )
+
+        _, created = WatchlistItem.objects.get_or_create(
+            user=request.user,
+            movie=movie,
+        )
+
+    return JsonResponse(
+        {
+            'message': (
+                'Movie added to your watchlist.'
+                if created
+                else 'Movie is already in your watchlist.'
+            ),
+        },
+        status=201 if created else 200,
     )
 
 def add_to_watchlist(request, movie_id):
@@ -162,6 +315,28 @@ def add_to_watchlist(request, movie_id):
         status=201
     )
 
+def remove_from_watchlist(request, movie_id):
+    if not request.user.is_authenticated:
+        return JsonResponse(
+            {'error': 'Authentication required.'},
+            status=401,
+        )
+
+    if request.method != 'POST':
+        return HttpResponseNotAllowed(['POST'])
+
+    watchlist_item = get_object_or_404(
+        WatchlistItem,
+        user=request.user,
+        movie_id=movie_id,
+    )
+
+    watchlist_item.delete()
+
+    return JsonResponse(
+        {'message': 'Movie removed from your watchlist.'},
+        status=200,
+    )
 
 def update_watchlist_item(request, movie_id):
     if not request.user.is_authenticated:

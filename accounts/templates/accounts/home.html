@@ -94,6 +94,24 @@
 
                                 <p class="update-message" role="status" aria-live="polite"></p>
                             </form>
+
+                            <form
+                                class="watchlist-remove-form"
+                                method="post"
+                                action="{% url 'remove_from_watchlist' item.movie.pk %}"
+                            >
+                                {% csrf_token %}
+
+                                <button type="submit" class="watchlist-remove">
+                                    Remove from Watchlist
+                                </button>
+
+                                <p
+                                    class="remove-message"
+                                    role="status"
+                                    aria-live="polite"
+                                ></p>
+                            </form>
                         </div>
                     </li>
                 {% endfor %}
@@ -154,6 +172,91 @@
                 message.textContent = "Changes saved.";
             } catch (error) {
                 message.textContent = "Couldn't save changes. Please try again.";
+            } finally {
+                button.disabled = false;
+            }
+        });
+    });
+
+    document.querySelectorAll(".watchlist-remove-form").forEach((form) => {
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault();
+
+            const button = form.querySelector('button[type="submit"]');
+            const message = form.querySelector(".remove-message");
+
+            if (button.disabled) {
+                return;
+            }
+
+            button.disabled = true;
+            message.textContent = "Removing movie…";
+
+            try {
+                const response = await fetch(form.action, {
+                    method: "POST",
+                    body: new FormData(form),
+                    credentials: "same-origin",
+                    headers: {
+                        Accept: "application/json"
+                    }
+                });
+
+                if (response.status === 401) {
+                    message.textContent =
+                        "Please log in again to remove this movie.";
+                    return;
+                }
+
+                if (response.status === 403) {
+                    message.textContent =
+                        "Your request was rejected. Refresh the page and try again.";
+                    return;
+                }
+
+                const contentType =
+                    response.headers.get("content-type") || "";
+
+                if (!contentType.includes("application/json")) {
+                    message.textContent =
+                        "The server returned an unexpected response. Please refresh the page.";
+                    return;
+                }
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    message.textContent =
+                        data.error || "Couldn't remove this movie. Please try again.";
+                    return;
+                }
+
+                // Remove this movie's card from the page.
+                const item = form.closest("li");
+                const watchlist = item.closest(".watchlist");
+
+                item.remove();
+
+                // Show the empty state if the last movie was removed.
+                if (!watchlist.querySelector("li")) {
+                    const emptyState = document.createElement("section");
+                    emptyState.className = "empty";
+
+                    const heading = document.createElement("h2");
+                    heading.textContent = "Make room for a new favorite.";
+
+                    const description = document.createElement("p");
+                    description.textContent =
+                        "Your watchlist is empty. Browse movies to add one!";
+
+                    emptyState.append(heading, description);
+                    watchlist.replaceWith(emptyState);
+                }
+
+            } catch (error) {
+                message.textContent =
+                    "Couldn't confirm whether the movie was removed. Please refresh the page.";
+
             } finally {
                 button.disabled = false;
             }
