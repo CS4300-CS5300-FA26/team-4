@@ -1,11 +1,12 @@
 from unittest.mock import patch
 from behave import given, when, then
 from django.urls import reverse
+import uuid
 
 # --- View complete movie details ---
 @given('a movie has poster, overview, cast, genres, ratings, and streaming information')
 def step_movie_has_details(context):
-    context.tmdb_id = 12345
+    context.tmdb_id = int(uuid.uuid4().int % 1000000000) # generate unique tmdb id
 
     context.tmdb_data = {
         'title': 'SD9 Test Movie',
@@ -71,14 +72,15 @@ def step_viewing_movie_details(context):
     # Create a movie that can be added to the user's watchlist.
     from movies.models import Movie
 
+    context.tmdb_id = int(uuid.uuid4().int % 1000000000)
+
     context.movie = Movie.objects.create(
         title='SD9 Test Movie',
         overview='A test overview for the movie.',
         release_year=2024,
-        tmdb_id=12345,
+        tmdb_id=context.tmdb_id,
     )
 
-    context.tmdb_id = 12345
     context.tmdb_data = {
         'title': 'SD9 Test Movie',
         'release_date': '2024-05-10',
@@ -103,7 +105,7 @@ def step_movie_available_from_source(context, source):
     from movies.models import Movie
 
     context.movie_source = source
-    context.tmdb_id = 12345
+    context.tmdb_id = int(uuid.uuid4().int % 1000000000)
     context.tmdb_data = {
         'title': 'SD9 Test Movie',
         'release_date': '2024-05-10',

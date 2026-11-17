@@ -2,13 +2,16 @@ from behave import given, when, then
 from django.contrib.auth.models import User
 from django.urls import reverse
 from movies.models import Movie, WatchlistItem
+import uuid
 
 # --- Add a title to my watchlist --- 
 @given('I am logged in')
 def step_logged_in(context):
+    unique_id = uuid.uuid4().hex[:8]
+
     context.user = User.objects.create_user(
-        username='sd3user',
-        email='sd3user@example.com',
+        username=f'sd3user_{unique_id}',
+        email=f'sd3user_{unique_id}@example.com',
         password='TestPassword123!'
     )
 
