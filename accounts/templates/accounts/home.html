@@ -52,8 +52,8 @@
                             >
                                 {% csrf_token %}
 
-                                <p>
-                                    <label for="watched-{{ item.pk }}">
+                                <div class="watchlist-controls">
+                                    <label class="watched-toggle" for="watched-{{ item.pk }}">
                                         <input
                                             type="checkbox"
                                             id="watched-{{ item.pk }}"
@@ -61,25 +61,36 @@
                                             value="true"
                                             {% if item.watched %}checked{% endif %}
                                         >
-                                        Watched
+                                        <span class="toggle-track" aria-hidden="true"></span>
+                                        <span>Watched</span>
                                     </label>
-                                </p>
 
-                                <p>
-                                    <label for="rating-{{ item.pk }}">Your rating (1–10)</label>
+                                    <div class="personal-rating">
+                                        <label for="rating-{{ item.pk }}">Your rating</label>
 
-                                    <input
-                                        type="number"
-                                        id="rating-{{ item.pk }}"
-                                        name="rating"
-                                        min="1"
-                                        max="10"
-                                        step="1"
-                                        value="{{ item.personal_rating|default_if_none:'' }}"
-                                    >
-                                </p>
+                                        <div class="rating-input">
+                                            <span class="rating-star" aria-hidden="true">★</span>
 
-                                <button type="submit">Save</button>
+                                            <input
+                                                type="number"
+                                                id="rating-{{ item.pk }}"
+                                                name="rating"
+                                                min="1"
+                                                max="10"
+                                                step="1"
+                                                placeholder="—"
+                                                aria-describedby="rating-scale-{{ item.pk }}"
+                                                value="{{ item.personal_rating|default_if_none:'' }}"
+                                            >
+
+                                            <span id="rating-scale-{{ item.pk }}" class="rating-scale">
+                                                / 10
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <button type="submit" class="watchlist-save">Save</button>
+                                </div>
 
                                 <p class="update-message" role="status" aria-live="polite"></p>
                             </form>
