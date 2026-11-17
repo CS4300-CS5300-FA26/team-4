@@ -23,6 +23,7 @@ Feature: Popular Movies and Shows (User Story SD-6)
 
   Scenario: Selecting a popular title opens its details page
     Given I am on the Home page
+    When the page loads
     When I select a popular title
     Then I should be taken to that title's details page
     And I should see the selected title's details
