@@ -17,9 +17,21 @@ urlpatterns = [
     ),
 
     path(
+        'watchlist/add/tmdb/<int:tmdb_id>/',
+        views.add_search_movie_to_watchlist,
+        name='add_search_movie_to_watchlist',
+    ),
+
+    path(
         'watchlist/add/<int:movie_id>/',
         views.add_to_watchlist,
         name='add_to_watchlist'
+    ),
+
+    path(
+        'watchlist/remove/<int:movie_id>/',
+        views.remove_from_watchlist,
+        name='remove_from_watchlist',
     ),
 
     path(

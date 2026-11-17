@@ -1,17 +1,25 @@
-const form = document.getElementById("watchlist-form");
+// Support the movie-detail form and each search-result form.
+document.querySelectorAll(
+    "#watchlist-form, .watchlist-add-form"
+).forEach((form) => {
+    const button = form.querySelector('button[type="submit"]');
 
-if (form) {
-    let isSaved = form.querySelector("button").disabled;
+    const message = form.querySelector(
+        "#watchlist-message, .watchlist-message"
+    );
+
+    const wrapper = form.querySelector(
+        "#watchlist-button-wrapper, .watchlist-button-wrapper"
+    );
+
+    let isSaved = button.disabled;
 
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
 
-        if (isSaved) {
+        if (isSaved || button.disabled) {
             return;
         }
-
-        const button = form.querySelector("button");
-        const message = document.getElementById("watchlist-message");
 
         button.disabled = true;
         message.textContent = "Adding movie…";
@@ -30,6 +38,7 @@ if (form) {
                 form.dataset.loginUrl,
                 window.location.href
             );
+
             const finalUrl = new URL(response.url);
 
             const redirectedToLogin =
@@ -66,25 +75,27 @@ if (form) {
                 return;
             }
 
-            message.textContent =
-                data.message || "Movie added to your watchlist.";
-
             isSaved = true;
-
-            const wrapper = document.getElementById(
-                "watchlist-button-wrapper"
-            );
-            wrapper.title = "Already saved to your watchlist";
+            button.textContent = "Added to Watchlist";
 
             button.setAttribute(
                 "aria-label",
-                "Add to Watchlist — already saved"
+                "Added to Watchlist — already saved"
             );
+
+            if (wrapper) {
+                wrapper.title = "Already saved to your watchlist";
+            }
+
+            message.textContent =
+                data.message || "Movie added to your watchlist.";
+
         } catch (error) {
             message.textContent =
                 "Unable to confirm whether the movie was added. Please try again.";
+
         } finally {
             button.disabled = isSaved;
         }
     });
-}
+});
