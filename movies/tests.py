@@ -1486,7 +1486,12 @@ class RecommendedMoviesTest(TestCase):
 
     @patch("movies.services.requests.get")
     def test_no_favourites_means_no_tmdb_calls(self, mock_get):
-        for empty in ([], None, "x", {1, 2, 3}, [None, "abc", -4, 0, True, 2.5, Decimal("2.5"), "2.5", "-3", "\u00b2"]):
+        bad_inputs = (
+            [], None, "x", {1, 2, 3},
+            [None, "abc", -4, 0, True, 2.5, Decimal("2.5"), "2.5", "-3", "\u00b2",
+             "9" * 5000, 10**12],
+        )
+        for empty in bad_inputs:
             self.assertEqual(recommended_movies(empty)["results"], [])
         mock_get.assert_not_called()
 

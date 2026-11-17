@@ -211,7 +211,7 @@ def _clean_ids(ids):
             continue
         if isinstance(value, int):
             number = value
-        elif isinstance(value, str) and value.strip().isascii() and value.strip().isdigit():
+        elif isinstance(value, str) and value.strip().isascii() and value.strip().isdigit() and len(value.strip()) <= 9:
             number = int(value.strip())     # "7" is fine; "2.5" or "-3" is not an id
         else: 
             continue    # floats, decimals and everything else are rejected, not truncated
@@ -219,7 +219,7 @@ def _clean_ids(ids):
             number = int(value)
         except (TypeError, ValueError):
             continue
-        if number > 0 and number not in cleaned:
+        if 0 < number < 10**9 and number not in cleaned:
             cleaned.append(number)
     return cleaned
 
