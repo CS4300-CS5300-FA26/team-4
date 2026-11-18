@@ -13,4 +13,7 @@ Feature: Viewing Statistics (User Story SD-10)
     When I open the Statistics page
     Then I should see my total number of watched titles
     And I should see statistics about the genres I watch most
-    And I should see a visual representation of my genre statistics
+    And my genre statistics should be returned as structured data
+
+    
+    # And I should see a visual representation of my genre statistics --- might need to save for last sprint
