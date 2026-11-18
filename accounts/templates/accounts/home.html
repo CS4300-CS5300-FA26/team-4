@@ -83,57 +83,6 @@
             </div>
         </section>
 
-        <section
-            id="recommendations"
-            class="dashboard-section"
-            aria-labelledby="recommendations-heading"
-            data-recommendations-url="{% url 'personalized_recommendations' %}"
-        >
-            <p class="eyebrow">Find your next favorite</p>
-            <h2 id="recommendations-heading">Recommended for You</h2>
-
-            <p>Suggestions based on your highest-rated watched movies.</p>
-
-            <p class="dashboard-status" role="status">
-                Loading recommendations…
-            </p>
-
-            <button type="button" class="dashboard-retry" hidden>
-                Try again
-            </button>
-
-            <div class="movie-grid recommendation-grid"></div>
-        </section>
-
-        <template id="recommendation-card">
-            <article class="movie">
-                <div
-                    class="movie-thumbnail poster-placeholder"
-                    aria-hidden="true"
-                >
-                    Poster unavailable
-                </div>
-
-                <div class="movie-body">
-                    <p class="year"></p>
-
-                    <h3>
-                        <a class="recommendation-title"></a>
-                    </h3>
-
-                    <form class="recommendation-add-form" method="post">
-                        {% csrf_token %}
-
-                        <button type="submit">
-                            Add to Watchlist
-                        </button>
-
-                        <p class="watchlist-message" role="status"></p>
-                    </form>
-                </div>
-            </article>
-        </template>
-
         <noscript>
             <p>
                 Enable JavaScript to load recommendations
