@@ -13,7 +13,7 @@ from .services import (
     fetch_movie,
     build_search_results,
     search_movies,
-    trending_movies,
+    fetch_trending_movies,
     recommended_movies,
 )
 
@@ -1489,7 +1489,7 @@ class TrendingMoviesTest(TestCase):
     @patch("movies.services.requests.get")
     def test_uses_the_trending_endpoint_with_key_window_and_page(self, mock_get):
         mock_get.return_value = fake_response(FAKE_SEARCH)
-        trending_movies(time_window="day", page=2)
+        fetch_trending_movies(time_window="day", page=2)
         args, kwargs = mock_get.call_args
         self.assertTrue(args[0].endswith("/trending/movie/day"))
         self.assertEqual(kwargs["params"]["api_key"], "test-key")
@@ -1499,7 +1499,7 @@ class TrendingMoviesTest(TestCase):
     @patch("movies.services.requests.get")
     def test_defaults_to_this_week_page_one(self, mock_get):
         mock_get.return_value = fake_response(FAKE_SEARCH)
-        trending_movies()
+        fetch_trending_movies()
         args, kwargs = mock_get.call_args
         self.assertTrue(args[0].endswith("/trending/movie/week"))
         self.assertEqual(kwargs["params"]["page"], 1)
@@ -1509,29 +1509,29 @@ class TrendingMoviesTest(TestCase):
         mock_get.return_value = fake_response(FAKE_SEARCH)
         for given, expected in (("month", "week"), (None, "week"), ("", "week"), (" DAY ", "day"),
                                 ("day/../x", "week")):
-            trending_movies(time_window=given)
+            fetch_trending_movies(time_window=given)
             self.assertTrue(mock_get.call_args.args[0].endswith("/trending/movie/" + expected))
         for given, sent in (("abc", 1), (0, 1), (-3, 1), (99999, 500), ("4", 4)):
-            trending_movies(page=given)
+            fetch_trending_movies(page=given)
             self.assertEqual(mock_get.call_args.kwargs["params"]["page"], sent)
 
     @override_settings(TMDB_API_KEY="")
     @patch("movies.services.requests.get")
     def test_missing_key_gives_a_clear_error(self, mock_get):
         with self.assertRaises(RuntimeError):
-            trending_movies()
+            fetch_trending_movies()
         mock_get.assert_not_called()
 
     @patch("movies.services.requests.get")
     def test_tmdb_error_raises(self, mock_get):
         mock_get.return_value = fake_response(status=500)
         with self.assertRaises(requests.HTTPError):
-            trending_movies()
+            fetch_trending_movies()
 
     @patch("movies.services.requests.get")
     def test_reply_can_be_turned_into_cards_for_the_page(self, mock_get):
         mock_get.return_value = fake_response(FAKE_SEARCH)
-        cards = build_search_results(trending_movies())
+        cards = build_search_results(fetch_trending_movies())
         self.assertEqual([c["tmdb_id"] for c in cards], [27205, 1, 2])
         self.assertEqual(cards[0]["title"], "Inception")
 

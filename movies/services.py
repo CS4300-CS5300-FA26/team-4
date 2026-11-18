@@ -125,12 +125,15 @@ def _get(path, params):
     response.raise_for_status()
     return response.json()
 
-# Get this week's trending movies from TMDB.
-def fetch_trending_movies():
-    return _get(
-        "/trending/movie/week",
-        {"language": "en-US"},
-    )
+# 'day' or 'week'; anything else becomes 'week'
+def _clean_time_window(window):
+    text = str(window or "").strip().lower()
+    return text if text in TIME_WINDOWS else "week"
+
+# Movies that are popular right now, from TMDB's trending list. Returns taw JSON. Pass to build_search_results
+def fetch_trending_movies(time_window='week', page=1):
+    window = _clean_time_window(time_window)
+    return _get(f"/trending/movie/{window}", {"page": _clean_page(page)})
     
 #Find movies by title and/or genre, year and minimum rating.
 def search_movies(query="", genre=None, year=None, min_rating=None, page=1, provider=None):
@@ -194,19 +197,6 @@ def build_search_results(data):
             "rating": item.get("vote_average"),
         })
     return movies
-
-# --- Popular titles ------------------------------------------------------------
-
-# 'day' or 'week'; anything else becomes 'week'
-def _clean_time_window(window):
-    text = str(window or "").strip().lower()
-    return text if text in TIME_WINDOWS else "week"
-
-# Movies that are popular right now, from TMDB's trending list. Returns taw JSON. Pass to build_search_results
-def trending_movies(time_window='week', page=1):
-    window = _clean_time_window(time_window)
-    return _get(f"/trending/movie/{window}", {"page": _clean_page(page)})
-
 
 # --- Recommendations -------------------------------------------------------
 
