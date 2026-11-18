@@ -2,10 +2,11 @@ import logging
 import requests
 
 from django.http import Http404, HttpResponseNotAllowed, JsonResponse
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import reverse
 from django.utils import timezone
 from django.db import transaction
+from django.contrib.auth.views import redirect_to_login
 
 from .models import Movie, WatchlistItem
 from .services import (
@@ -430,6 +431,15 @@ def viewing_stats(request):
 
 
 # --- Sprint 3: Recommendation History --------------------------------------
+
+def recommendations_page(request):
+    if not request.user.is_authenticated:
+        return redirect_to_login(request.get_full_path())
+    
+    return render(
+        request,
+        'movies/recommendations.html',
+    )
 
 def personalized_recommendations(request):
     if not request.user.is_authenticated:
