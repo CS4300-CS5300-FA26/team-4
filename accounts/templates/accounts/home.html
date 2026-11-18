@@ -1,6 +1,14 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}My Watchlist | Personal Movie Watch List{% endblock %}
+
+{% block extra_css %}
+    <link
+        rel="stylesheet"
+        href="{% static 'movies/dashboard.css' %}"
+    >
+{% endblock %}
 
 {% block content %}
     {% if user.is_authenticated %}
@@ -17,6 +25,123 @@
                 Browse Movies
             </a>
         </section>
+
+        <section
+            id="profile"
+            class="dashboard-section"
+            aria-labelledby="profile-heading"
+            data-stats-url="{% url 'viewing_stats' %}"
+        >
+            <p class="eyebrow">Your movie journey</p>
+            <h2 id="profile-heading">Statistics / Profile</h2>
+            <p>Viewing statistics for {{ user.username }}</p>
+
+            <p class="dashboard-status" role="status">
+                Loading your statistics…
+            </p>
+
+            <button type="button" class="dashboard-retry" hidden>
+                Try again
+            </button>
+
+            <div class="stats-content" hidden>
+                <dl class="stats-grid">
+                    <div>
+                        <dt>Movies saved</dt>
+                        <dd data-stat="total_saved">—</dd>
+                    </div>
+
+                    <div>
+                        <dt>Watched</dt>
+                        <dd data-stat="total_watched">—</dd>
+                    </div>
+
+                    <div>
+                        <dt>Still to watch</dt>
+                        <dd data-stat="total_to_watch">—</dd>
+                    </div>
+
+                    <div>
+                        <dt>Rated</dt>
+                        <dd data-stat="total_rated">—</dd>
+                    </div>
+                </dl>
+
+                <h3>Your most-watched genres</h3>
+
+                <p class="genre-summary"></p>
+
+                <ul
+                    class="genre-chart"
+                    aria-label="Watched movies by genre"
+                ></ul>
+
+                <p class="genre-note">
+                    A movie can count toward several genres.
+                    Genre information may be incomplete when TMDB is unavailable.
+                </p>
+            </div>
+        </section>
+
+        <section
+            id="recommendations"
+            class="dashboard-section"
+            aria-labelledby="recommendations-heading"
+            data-recommendations-url="{% url 'personalized_recommendations' %}"
+        >
+            <p class="eyebrow">Find your next favorite</p>
+            <h2 id="recommendations-heading">Recommended for You</h2>
+
+            <p>Suggestions based on your highest-rated watched movies.</p>
+
+            <p class="dashboard-status" role="status">
+                Loading recommendations…
+            </p>
+
+            <button type="button" class="dashboard-retry" hidden>
+                Try again
+            </button>
+
+            <div class="movie-grid recommendation-grid"></div>
+        </section>
+
+        <template id="recommendation-card">
+            <article class="movie">
+                <div
+                    class="movie-thumbnail poster-placeholder"
+                    aria-hidden="true"
+                >
+                    Poster unavailable
+                </div>
+
+                <div class="movie-body">
+                    <p class="year"></p>
+
+                    <h3>
+                        <a class="recommendation-title"></a>
+                    </h3>
+
+                    <form class="recommendation-add-form" method="post">
+                        {% csrf_token %}
+
+                        <button type="submit">
+                            Add to Watchlist
+                        </button>
+
+                        <p class="watchlist-message" role="status"></p>
+                    </form>
+                </div>
+            </article>
+        </template>
+
+        <noscript>
+            <p>
+                Enable JavaScript to load recommendations
+                and viewing statistics.
+            </p>
+        </noscript>
+
+        <h2 id="watchlist-heading">My Watchlist</h2>
 
         {% if watchlist_items %}
             <ul class="watchlist">
@@ -135,6 +260,8 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="{% static 'movies/dashboard.js' %}" defer></script>
+
 <script>
     document.querySelectorAll(".watchlist-update-form").forEach((form) => {
         form.addEventListener("submit", async (event) => {
@@ -171,6 +298,7 @@
                 }
 
                 message.textContent = "Changes saved.";
+                document.dispatchEvent(new Event("watchlist:changed"));
             } catch (error) {
                 message.textContent = "Couldn't save changes. Please try again.";
             } finally {
@@ -249,6 +377,7 @@
                 const watchlist = item.closest(".watchlist");
 
                 item.remove();
+                document.dispatchEvent(new Event("watchlist:changed"));
 
                 // Show the empty state if the last movie was removed.
                 if (!watchlist.querySelector("li")) {
