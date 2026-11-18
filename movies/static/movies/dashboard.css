@@ -1,0 +1,118 @@
+.dashboard-section {
+    margin-bottom: 2.5rem;
+    padding: clamp(1rem, 3vw, 2rem);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+}
+
+.dashboard-section h2 {
+    margin: 0 0 0.5rem;
+}
+
+.dashboard-section > p:not(.eyebrow),
+.genre-summary,
+.genre-note {
+    color: var(--muted);
+}
+
+/* Movie totals */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0 2rem;
+}
+
+.stats-grid > div {
+    padding: 1rem;
+    background: var(--background);
+    border-radius: 12px;
+}
+
+.stats-grid dt {
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.stats-grid dd {
+    margin: 0;
+    color: var(--accent);
+    font-size: 2rem;
+    font-weight: 750;
+}
+
+/* Genre bars */
+.genre-chart {
+    display: grid;
+    gap: 1rem;
+    padding: 0;
+    list-style: none;
+}
+
+.genre-chart li {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.genre-chart meter {
+    width: 100%;
+    height: 1rem;
+    accent-color: var(--accent);
+}
+
+.genre-chart meter::-webkit-meter-bar {
+    background: var(--background);
+    border: 0;
+    border-radius: 99px;
+}
+
+.genre-chart meter::-webkit-meter-optimum-value {
+    background: var(--accent);
+    border-radius: 99px;
+}
+
+.genre-chart meter::-moz-meter-bar {
+    background: var(--accent);
+}
+
+.genre-note,
+.watchlist-message {
+    font-size: 0.85rem;
+}
+
+/* Recommended movie cards */
+.recommendation-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.recommendation-grid h3 {
+    margin: 0.5rem 0 1rem;
+    font-size: 1.05rem;
+    overflow-wrap: anywhere;
+}
+
+.recommendation-grid button {
+    width: 100%;
+    padding: 0.65rem;
+    font-size: 0.9rem;
+}
+
+/* Keep loading controls and content hidden when requested. */
+.dashboard-section [hidden] {
+    display: none !important;
+}
+
+/* Smaller screens */
+@media (max-width: 650px) {
+    .stats-grid,
+    .recommendation-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 420px) {
+    .recommendation-grid {
+        grid-template-columns: 1fr;
+    }
+}
