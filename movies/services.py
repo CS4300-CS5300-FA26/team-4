@@ -3,6 +3,7 @@ import math
 
 import requests
 from django.conf import settings
+from django.core.cache import cache
 
 from .models import WatchlistItem
 
@@ -279,14 +280,21 @@ def build_viewing_stats(user):
         if not tmdb_id:
             continue
 
-        try:
-            movie_data = fetch_movie(tmdb_id)
-        except (RuntimeError, requests.RequestException):
-            continue
+        cache_key = f"movie_genres_{tmdb_id}"
+        genres = cache.get(cache_key)
 
-        genres = movie_data.get("genres", [])
-        if not isinstance(genres, list):
-            continue
+        if genres is None:
+            try:
+                movie_data = fetch_movie(tmdb_id)
+            except (RuntimeError, requests.RequestException):
+                continue
+
+            genres = movie_data.get("genres", [])
+            if not isinstance(genres, list):
+                genres = []
+
+            # Cache genre data for 24 hours to avoid repeated TMDB calls.
+            cache.set(cache_key, genres, 60 * 60 * 24)
 
         for genre in genres:
             if not isinstance(genre, dict):
