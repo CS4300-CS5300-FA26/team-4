@@ -3,6 +3,7 @@ from django.urls import reverse
 from django.core.cache import cache
 from unittest.mock import patch
 from movies.models import Movie, WatchlistItem
+from uuid import uuid4
 
 # helper function
 def create_sd10_movie(context, title, tmdb_id):
@@ -21,20 +22,26 @@ def create_sd10_movie(context, title, tmdb_id):
 # --- View total watched titles and genre statistics ---
 @given('I have marked several titles as watched')
 def create_watched_titles(context):
-    # create three movies with TMDB IDs
+    # Generate unique TMDB IDs for this scenario.
+    context.sd10_tmdb_ids = [
+        uuid4().int % 1_000_000_000 + 1_000_000_000
+        for _ in range(3)
+    ]
+
+    id_one, id_two, id_three = context.sd10_tmdb_ids
+
     context.movie_one = create_sd10_movie(
-        context, 'SD10 Movie One', 101
-        )
-
-    context.movie_two = create_sd10_movie(
-        context, 'SD10 Movie Two', 102
-        )
-
-    context.unwatched_movie = create_sd10_movie(
-        context, 'SD10 Unwatched Movie', 103
+        context, 'SD10 Movie One', id_one
     )
 
-    # add two watched movies and one unwatched movie
+    context.movie_two = create_sd10_movie(
+        context, 'SD10 Movie Two', id_two
+    )
+
+    context.unwatched_movie = create_sd10_movie(
+        context, 'SD10 Unwatched Movie', id_three
+    )
+
     WatchlistItem.objects.create(
         user=context.user,
         movie=context.movie_one,
@@ -53,14 +60,12 @@ def create_watched_titles(context):
         watched=False
     )
 
-    # remove any cached genre data from an earlier test
+    # Clear cached genre data for these exact IDs
     cache.delete_many([
-        'movie_genres_101',
-        'movie_genres_102',
-        'movie_genres_103',
+        f'movie_genres_{tmdb_id}'
+        for tmdb_id in context.sd10_tmdb_ids
     ])
 
-    # mock TMDB responses so the test does not need the internet
     patcher = patch(
         'movies.services.fetch_movie',
         side_effect=[
@@ -124,8 +129,18 @@ def verify_genre_data_structure(context):
 # --- View the statistics dashboard on the Watchlist page ---
 @when('I open my Watchlist page')
 def open_watchlist_page(context):
-    context.response = context.test.client.get(
-        reverse('home')
+    watchlist_url = reverse('home')
+
+    context.test.assertEqual(
+        watchlist_url,
+        '/accounts/'
+    )
+
+    context.response = context.test.client.get(watchlist_url)
+
+    context.test.assertEqual(
+        context.response.status_code,
+        200
     )
 
 @then('I should see the statistics dashboard')
