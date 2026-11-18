@@ -1,3 +1,4 @@
+
 # SD-10: Statistics
 
 Feature: Viewing Statistics (User Story SD-10)
@@ -13,6 +14,10 @@ Feature: Viewing Statistics (User Story SD-10)
     When I open the Statistics page
     Then I should see my total number of watched titles
     And I should see statistics about the genres I watch most
-    And my genre statistics should be returned as structured data    # placeholder until frontend is implemented
+    And my genre statistics should be returned as structured data
 
-    # And I should see a visual representation of my genre statistics
+  Scenario: View the statistics dashboard on the Watchlist page
+    When I open my Watchlist page
+    Then I should see the statistics dashboard
+    And I should see the watched genre chart
+    And the dashboard styles and script should be included

@@ -4,23 +4,34 @@ from django.core.cache import cache
 from unittest.mock import patch
 from movies.models import Movie, WatchlistItem
 
+# helper function
+def create_sd10_movie(context, title, tmdb_id):
+    movie = Movie.objects.create(
+        title=title,
+        tmdb_id=tmdb_id
+    )
+
+    if not hasattr(context, 'sd10_created_movie_ids'):
+        context.sd10_created_movie_ids = []
+
+    context.sd10_created_movie_ids.append(movie.pk)
+
+    return movie
+
 # --- View total watched titles and genre statistics ---
 @given('I have marked several titles as watched')
 def create_watched_titles(context):
     # create three movies with TMDB IDs
-    context.movie_one = Movie.objects.create(
-        title='SD10 Movie One',
-        tmdb_id=101
-    )
+    context.movie_one = create_sd10_movie(
+        context, 'SD10 Movie One', 101
+        )
 
-    context.movie_two = Movie.objects.create(
-        title='SD10 Movie Two',
-        tmdb_id=102
-    )
+    context.movie_two = create_sd10_movie(
+        context, 'SD10 Movie Two', 102
+        )
 
-    context.unwatched_movie = Movie.objects.create(
-        title='SD10 Unwatched Movie',
-        tmdb_id=103
+    context.unwatched_movie = create_sd10_movie(
+        context, 'SD10 Unwatched Movie', 103
     )
 
     # add two watched movies and one unwatched movie
@@ -109,3 +120,47 @@ def verify_genre_data_structure(context):
         context.test.assertIn('genre', genre)
         context.test.assertIn('count', genre)
         context.test.assertIsInstance(genre['count'], int)
+
+# --- View the statistics dashboard on the Watchlist page ---
+@when('I open my Watchlist page')
+def open_watchlist_page(context):
+    context.response = context.test.client.get(
+        reverse('home')
+    )
+
+@then('I should see the statistics dashboard')
+def verify_statistics_dashboard(context):
+    context.test.assertEqual(
+        context.response.status_code,
+        200
+    )
+
+    html = context.response.content.decode('utf-8')
+
+    context.test.assertIn('id="profile"', html)
+    context.test.assertIn('data-stats-url=', html)
+    context.test.assertIn('data-stat="total_watched"', html)
+
+@then('I should see the watched genre chart')
+def verify_watched_genre_chart(context):
+    html = context.response.content.decode('utf-8')
+
+    context.test.assertIn('class="genre-chart"', html)
+    context.test.assertIn(
+        'aria-label="Watched movies by genre"',
+        html
+    )
+
+@then('the dashboard styles and script should be included')
+def verify_dashboard_assets(context):
+    html = context.response.content.decode('utf-8')
+
+    context.test.assertIn(
+        '/static/movies/dashboard.css',
+        html
+    )
+
+    context.test.assertIn(
+        '/static/movies/dashboard.js',
+        html
+    )
