@@ -16,8 +16,10 @@ from .services import (
     fetch_movie,
     fetch_trending_movies,
     get_highest_rated_history,
+    recommended_movies,
     search_movies,
 )
+
 from .forms import MovieSearchForm
 
 
@@ -428,6 +430,70 @@ def viewing_stats(request):
 
 
 # --- Sprint 3: Recommendation History --------------------------------------
+
+def personalized_recommendations(request):
+    if not request.user.is_authenticated:
+        return JsonResponse(
+            {'error': 'Authentication required.'},
+            status=401,
+        )
+
+    if request.method != 'GET':
+        return HttpResponseNotAllowed(['GET'])
+
+    history = get_highest_rated_history(request.user)
+
+    seeds = [
+        movie['tmdb_id']
+        for movie in history
+        if movie['tmdb_id']
+    ]
+
+    if not seeds:
+        return JsonResponse({
+            'movies': [],
+            'has_history': False,
+        })
+
+    saved_ids = list(
+        WatchlistItem.objects
+        .filter(user=request.user)
+        .values_list('movie__tmdb_id', flat=True)
+    )
+
+    try:
+        movies = build_search_results(
+            recommended_movies(
+                seeds,
+                exclude_ids=saved_ids,
+                limit=6,
+            )
+        )
+    except (RuntimeError, requests.RequestException):
+        return JsonResponse(
+            {
+                'error': (
+                    'Recommendations are unavailable right now. '
+                    'Please try again.'
+                ),
+            },
+            status=503,
+        )
+
+    for movie in movies:
+        movie['detail_url'] = reverse(
+            'movie_detail',
+            args=[movie['tmdb_id']],
+        )
+        movie['add_url'] = reverse(
+            'add_search_movie_to_watchlist',
+            args=[movie['tmdb_id']],
+        )
+
+    return JsonResponse({
+        'movies': movies,
+        'has_history': True,
+    })
 
 def recommendation_history(request):
     if not request.user.is_authenticated:

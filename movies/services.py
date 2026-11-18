@@ -4,6 +4,7 @@ import math
 import requests
 from django.conf import settings
 from django.core.cache import cache
+from django.db.models import Count, Q
 
 from .models import WatchlistItem
 
@@ -265,6 +266,15 @@ def recommended_movies(tmdb_ids, exclude_ids=(), limit=20):
 # Count watched movies and determine the user's most-watched genres.
 # Genres come from TMDB because our Movie model does not store them.
 def build_viewing_stats(user):
+    totals = WatchlistItem.objects.filter(user=user).aggregate(
+        total_saved=Count('id'),
+        total_to_watch=Count('id', filter=Q(watched=False)),
+        total_rated=Count(
+            'id',
+            filter=Q(personal_rating__isnull=False),
+        ),
+    )
+
     watched_items = (
         WatchlistItem.objects
         .filter(user=user, watched=True)
@@ -309,6 +319,7 @@ def build_viewing_stats(user):
     ]
 
     return {
+        **totals,
         "total_watched": watched_items.count(),
         "genre_counts": genres,
         "top_genre": genres[0]["genre"] if genres else None,

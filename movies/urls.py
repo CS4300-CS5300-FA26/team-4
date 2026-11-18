@@ -49,6 +49,12 @@ urlpatterns = [
 
     # Sprint 3: highest-rated history for recommendations.
     path(
+        'recommendations/',
+        views.personalized_recommendations,
+        name='personalized_recommendations',
+    ),
+
+    path(
         'recommendations/history/',
         views.recommendation_history,
         name='recommendation_history'
