@@ -1,5 +1,5 @@
-import math
 from collections import Counter
+import math
 
 import requests
 from django.conf import settings
@@ -7,478 +7,266 @@ from django.conf import settings
 from .models import WatchlistItem
 
 
-# TMDB identifies genres by number.
+#TMDB identifies genres by number. These are TMDB's movie genre ids.
 GENRE_IDS = {
-    "action": 28,
-    "adventure": 12,
-    "animation": 16,
-    "comedy": 35,
-    "crime": 80,
-    "documentary": 99,
-    "drama": 18,
-    "family": 10751,
-    "fantasy": 14,
-    "history": 36,
-    "horror": 27,
-    "music": 10402,
-    "mystery": 9648,
-    "romance": 10749,
-    "science fiction": 878,
-    "thriller": 53,
-    "war": 10752,
-    "western": 37,
+    "action": 28, "adventure": 12, "animation": 16, "comedy": 35, "crime": 80, 
+    "documentary": 99, "drama": 18, "family": 10751, "fantasy": 14,
+    "history": 36, "horror": 27, "music": 10402, "mystery": 9648, 
+    "romance": 10749, "science fiction": 878, "thriller": 53, "war": 10752, "western": 37,
 }
 
-
-# Streaming services offered in the search filter.
-PROVIDER_IDS = {
-    "Netflix": 8,
-    "Hulu": 15,
-    "Amazon Prime Video": 9,
-    "Disney+": 337,
-    "HBO Max": 1899,
-    "Apple TV": 350,
-    "Paramount+": "2303|2616",
-    "Peacock": "386|387",
+#Streaming services (TMDB "watch provider" ids) offered in the search filter
+PROVIDER_IDS = { #A "|" means OR: some services have several plan tiers with separate ids.
+    "Netflix": 8, "Hulu": 15, "Amazon Prime Video": 9, "Disney+": 337,
+    "HBO Max": 1899, "Apple TV": 350, "Paramount+": "2303|2616", "Peacock": "386|387",  
 }
-
-_PROVIDERS_BY_LOWERCASE = {
-    name.lower(): provider_id
-    for name, provider_id in PROVIDER_IDS.items()
-}
-
+_PROVIDERS_BY_LOWERCASE = {name.lower(): pid for name, pid in PROVIDER_IDS.items()}
 
 TMDB_BASE = "https://api.themoviedb.org/3"
 POSTER_BASE = "https://image.tmdb.org/t/p/w500"
 CAST_LIMIT = 10
-WATCH_REGION = "US"
-MIN_VOTES = 50
-MAX_PAGE = 500
+WATCH_REGION = 'US' #Steaming availability differs by country. We only show US results for now 
+MIN_VOTES = 50  # ignores movies with a handful of votes, so rating mean something
+MAX_PAGE = 500 #TMDB rejects page numbers above 500
+TIME_WINDOWS = ("day", "week")  #TMDB's two trending windows
+MAX_SEEDS = 5 # how many of the user's movies we ask TMDB about (one request each)
 
-
-# -------------------------------------------------------------------
-# Movie details
-# -------------------------------------------------------------------
-
-# Ask TMDB for one movie and return the raw response.
+#-- Movie Details ---------------------------------------------------------------------------
+#Ask TMDB for one movie and return the raw anser
 def fetch_movie(tmdb_id):
     if not settings.TMDB_API_KEY:
-        raise RuntimeError(
-            "TMDB_API_KEY is not set. See the README."
-        )
-
-    response = requests.get(
-        f"{TMDB_BASE}/movie/{tmdb_id}",
-        params={
-            "api_key": settings.TMDB_API_KEY,
-            "append_to_response": "credits,watch/providers",
-        },
-        timeout=10,
+        raise RuntimeError("TMDB_API_KEY is not set. See the README.")
+    response = requests.get(f"{TMDB_BASE}/movie/{tmdb_id}",
+        params = {"api_key": settings.TMDB_API_KEY, "append_to_response": "credits,watch/providers"}, #asks TMDB to include the cast in the same answer
+        timeout = 10,
     )
-
-    response.raise_for_status()
-
+    
+    response.raise_for_status()     #turns 401/404/500 into an error we can catch
     return response.json()
 
-
-# Pull names out of a list of TMDB dictionaries.
+#pulls the "name" out of each dict in a list, ignoring anything odd.
 def _names(items, limit=None, key="name"):
     if not isinstance(items, list):
         return []
-
-    names = [
-        item[key]
-        for item in items
-        if isinstance(item, dict) and item.get(key)
-    ]
-
+    names = [i[key] for i in items if isinstance(i, dict) and i.get(key)]
     return names[:limit] if limit else names
 
-
-# Get subscription streaming providers for the US.
+#Names of subscription (flatrate) services for WATCH_REGION, or [] if none
 def _providers(block):
     if not isinstance(block, dict):
         return []
-
-    results = block.get("results")
-
-    region = (
-        results.get(WATCH_REGION)
-        if isinstance(results, dict)
-        else None
-    )
-
+    results = block.get('results')
+    region = results.get(WATCH_REGION) if isinstance(results, dict) else None
     if not isinstance(region, dict):
-        return []
+        return[]
+    return _names(region.get('flatrate'), key="provider_name")
 
-    return _names(
-        region.get("flatrate"),
-        key="provider_name",
-    )
-
-
-# Convert TMDB movie data into the format used by our templates.
+#Turn raw answer into dictionary, uses .get() so a missing field never crashes the page.
 def build_movie_context(data):
-    rating = data.get("vote_average")
-
-    credits = data.get("credits")
-
-    cast = (
-        credits.get("cast")
-        if isinstance(credits, dict)
-        else []
-    )
-
     poster_path = data.get("poster_path")
-
+    rating = data.get("vote_average")
+    credits = data.get("credits")
+    cast = credits.get("cast") if isinstance(credits, dict) else []
     return {
         "title": data.get("title"),
-        "release_year": (
-            data.get("release_date") or ""
-        )[:4],
+        "release_year": (data.get("release_date") or "")[:4],
         "overview": data.get("overview"),
-        "poster_url": (
-            f"{POSTER_BASE}{poster_path}"
-            if poster_path
-            else None
-        ),
-        "genres": _names(
-            data.get("genres")
-        ),
-        "cast": _names(
-            cast,
-            CAST_LIMIT,
-        ),
-        "rating": (
-            round(rating, 1)
-            if rating is not None
-            else None
-        ),
-        "where_to_watch": _providers(
-            data.get("watch/providers")
-        ),
+        "poster_url": f"https://image.tmdb.org/t/p/w500{data['poster_path']}" if data.get("poster_path") else None,
+        "genres": _names(data.get("genres")), 
+        "cast": _names(cast, CAST_LIMIT),
+        "rating": round(rating, 1) if rating is not None else None,
+        "where_to_watch": _providers(data.get("watch/providers")),   
     }
 
+# -- Search & filter ------------------------------------------------
 
-# -------------------------------------------------------------------
-# Search and filter
-# -------------------------------------------------------------------
-
-# Return a valid four-digit year or None.
+# A 4-digit year as a string, or None if it isn't one
 def _clean_year(year):
     text = str(year or "").strip()
+    return text if len(text) == 4 and text.isdigit() else None
 
-    return (
-        text
-        if len(text) == 4 and text.isdigit()
-        else None
-    )
-
-
-# Return a valid rating between 0 and 10 or None.
+# A rating between 0 and 10, or None if it isn't one
 def _clean_rating(rating):
     try:
         value = float(rating)
-
     except (TypeError, ValueError):
-        return None
+        return None 
+    return value if math.isfinite(value) and 0 <= value <= 10 else None
 
-    return (
-        value
-        if math.isfinite(value)
-        and 0 <= value <= 10
-        else None
-    )
-
-
-# Return a valid number from TMDB or 0.
+# A real, finit number from TMDB data, or 0 if it is missing or odd
 def _number(value):
-    if (
-        isinstance(value, bool)
-        or not isinstance(
-            value,
-            (int, float),
-        )
-    ):
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
         return 0
+    return value if math.isfinite(value) else 0
 
-    return (
-        value
-        if math.isfinite(value)
-        else 0
-    )
-
-
-# Return the year part of a TMDB release date.
+# The year part of a TMDB date
 def _year_of(release_date):
-    return (
-        release_date[:4]
-        if isinstance(release_date, str)
-        else ""
-    )
+    return release_date[:4] if isinstance(release_date, str) else ""
 
-
-# Convert a provider name into its TMDB provider ID.
+#A TMDB watch-provider id for a service name like 'Netflix' or None
 def _clean_provider(provider):
-    return _PROVIDERS_BY_LOWERCASE.get(
-        str(provider or "")
-        .strip()
-        .lower()
-    )
+    return _PROVIDERS_BY_LOWERCASE.get(str(provider or "").strip().lower())
 
-
-# Convert a genre name into its TMDB genre ID.
+#A TMDB genre id for a genre name like "Drama", or None if unknown
 def _clean_genre(genre):
-    return GENRE_IDS.get(
-        str(genre or "")
-        .strip()
-        .lower()
-    )
+    return GENRE_IDS.get(str(genre or "").strip().lower())
 
-
-# Keep page numbers inside TMDB's allowed range.
+#A page number betweeen 1 and MAX_PAGE; anything else becomes 1
 def _clean_page(page):
     try:
         number = int(page)
-
-    except (TypeError, ValueError):
+    except(TypeError, ValueError):
         return 1
+    return min(number, MAX_PAGE) if number >= 1 else 1
 
-    return (
-        min(number, MAX_PAGE)
-        if number >= 1
-        else 1
-    )
-
-
-# Make a general TMDB GET request.
+#Call TMDB with key. Same failure behavior as fetch_movie
 def _get(path, params):
     if not settings.TMDB_API_KEY:
-        raise RuntimeError(
-            "TMDB_API_KEY is not set. See the README"
-        )
-
+        raise RuntimeError("TMDB_API_KEY is not set. See the README")
     response = requests.get(
-        f"{TMDB_BASE}{path}",
-        params={
-            "api_key": settings.TMDB_API_KEY,
-            **params,
-        },
-        timeout=10,
+        f"{TMDB_BASE}{path}", params={"api_key": settings.TMDB_API_KEY, **params}, timeout=10,
     )
-
     response.raise_for_status()
-
     return response.json()
 
+# 'day' or 'week'; anything else becomes 'week'
+def _clean_time_window(window):
+    text = str(window or "").strip().lower()
+    return text if text in TIME_WINDOWS else "week"
 
-# Get this week's trending movies.
-def fetch_trending_movies():
-    return _get(
-        "/trending/movie/week",
-        {
-            "language": "en-US",
-        },
-    )
-
-
-# Find movies using the selected search filters.
-def search_movies(
-    query="",
-    genre=None,
-    year=None,
-    min_rating=None,
-    page=1,
-    provider=None,
-):
+# Movies that are popular right now, from TMDB's trending list. Returns taw JSON. Pass to build_search_results
+def fetch_trending_movies(time_window='week', page=1):
+    window = _clean_time_window(time_window)
+    return _get(f"/trending/movie/{window}", {"page": _clean_page(page)})
+    
+#Find movies by title and/or genre, year and minimum rating.
+def search_movies(query="", genre=None, year=None, min_rating=None, page=1, provider=None):
     query = (query or "").strip()
-
     genre_id = _clean_genre(genre)
     year = _clean_year(year)
     min_rating = _clean_rating(min_rating)
     page = _clean_page(page)
     provider_id = _clean_provider(provider)
 
-    # Title searches use TMDB's search endpoint.
     if query:
-        params = {
-            "query": query,
-            "page": page,
-        }
-
+        params = {"query": query, "page": page}
         if year:
             params["primary_release_year"] = year
-
-        data = _get(
-            "/search/movie",
-            params,
-        )
-
-        if not isinstance(data, dict):
+        data = _get("/search/movie", params)
+        if not isinstance(data, dict):  # a successful but malformed reply
             data = {}
-
         results = data.get("results")
-
-        results = (
-            results
-            if isinstance(results, list)
-            else []
-        )
-
-        results = [
-            movie
-            for movie in results
-            if isinstance(movie, dict)
-        ]
-
+        results = results if isinstance(results, list) else []
+        results = [m for m in results if isinstance(m, dict)]   # skip odd entries
         if genre_id:
-            results = [
-                movie
-                for movie in results
-                if isinstance(
-                    movie.get("genre_ids"),
-                    list,
-                )
-                and genre_id
-                in movie["genre_ids"]
-            ]
-
+            results = [m for m in results if isinstance(m.get("genre_ids"), list)
+                    and genre_id in m["genre_ids"]]
         if min_rating is not None:
-            results = [
-                movie
-                for movie in results
-                if _number(
-                    movie.get("vote_average")
-                ) >= min_rating
-                and _number(
-                    movie.get("vote_count")
-                ) >= MIN_VOTES
-            ]
+            results = [m for m in results if _number(m.get("vote_average")) >= min_rating
+            and _number(m.get("vote_count")) >= MIN_VOTES]
+        filtered = bool(genre_id or min_rating is not None)
+        return {**data, "results": results, "filtered": filtered, "page_total_results": len(results), "provider_ignored": bool(provider_id)}
 
-        filtered = bool(
-            genre_id
-            or min_rating is not None
-        )
-
-        return {
-            **data,
-            "results": results,
-            "filtered": filtered,
-            "page_total_results": len(
-                results
-            ),
-            "provider_ignored": bool(
-                provider_id
-            ),
-        }
-
-    # If no filters were entered, return no results.
-    if not (
-        genre_id
-        or year
-        or min_rating is not None
-        or provider_id
-    ):
-        return {
-            "page": 1,
-            "results": [],
-            "total_pages": 0,
-            "total_results": 0,
-        }
-
-    # Filter-only searches use TMDB's discover endpoint.
-    params = {
-        "page": page,
-        "sort_by": "popularity.desc",
-        "vote_count.gte": MIN_VOTES,
-    }
-
+    if not (genre_id or year or min_rating is not None or provider_id):
+        return {"page": 1, "results": [], "total_pages": 0, "total_results": 0}
+    
+    params = {"page": page, "sort_by": "popularity.desc", "vote_count.gte": MIN_VOTES}
     if genre_id:
         params["with_genres"] = genre_id
-
     if year:
         params["primary_release_year"] = year
-
     if min_rating is not None:
-        params["vote_average.gte"] = (
-            min_rating
-        )
-
+        params["vote_average.gte"] = min_rating
     if provider_id:
-        params["with_watch_providers"] = (
-            provider_id
-        )
-        params["watch_region"] = (
-            WATCH_REGION
-        )
-        params[
-            "with_watch_monetization_types"
-        ] = "flatrate"
+        params["with_watch_providers"] = provider_id
+        params["watch_region"] = WATCH_REGION
+        params["with_watch_monetization_types"] = "flatrate"
+    return _get("/discover/movie", params)
 
-    return _get(
-        "/discover/movie",
-        params,
-    )
-
-
-# Convert TMDB search results into data used by our templates.
+#Turn TMDB's search reply into simple dicts the Search page can loop over
 def build_search_results(data):
-    results = (
-        data.get("results")
-        if isinstance(data, dict)
-        else None
-    )
-
+    results = data.get("results") if isinstance(data, dict) else None
     if not isinstance(results, list):
-        return []
-
+        return[]
     movies = []
-
     for item in results:
-        if (
-            not isinstance(item, dict)
-            or not item.get("id")
-        ):
+        if not isinstance(item, dict) or not item.get("id"):
             continue
-
-        poster_path = item.get(
-            "poster_path"
-        )
-
+        poster_path = item.get("poster_path")
         movies.append({
             "tmdb_id": item["id"],
-            "title": (
-                item.get("title") or ""
-            ),
-            "release_year": _year_of(
-                item.get("release_date")
-            ),
-            "poster_url": (
-                f"{POSTER_BASE}{poster_path}"
-                if poster_path
-                else None
-            ),
-            "rating": item.get(
-                "vote_average"
-            ),
+            "title": item.get("title") or "",
+            "release_year": _year_of(item.get("release_date")),
+            "poster_url": f"{POSTER_BASE}{poster_path}" if poster_path else None,
+            "rating": item.get("vote_average"),
         })
-
     return movies
 
+# --- Recommendations -------------------------------------------------------
 
-# -------------------------------------------------------------------
-# Sprint 3 - Viewing statistics
-# -------------------------------------------------------------------
+# Unique, positive whole-number TMDB ids in the order given. Anything else is dropped
+def _clean_ids(ids):
+    cleaned = []
+    for value in ids if isinstance(ids, (list, tuple)) else []:
+        if isinstance(value, bool):
+            continue
+        if isinstance(value, int):
+            number = value
+        elif isinstance(value, str) and value.strip().isascii() and value.strip().isdigit() and len(value.strip()) <= 9:
+            number = int(value.strip())     # "7" is fine; "2.5" or "-3" is not an id
+        else: 
+            continue    # floats, decimals and everything else are rejected, not truncated
+        try:
+            number = int(value)
+        except (TypeError, ValueError):
+            continue
+        if 0 < number < 10**9 and number not in cleaned:
+            cleaned.append(number)
+    return cleaned
+
+# Movies TMDB recommends based on titles the user rated highly
+def recommended_movies(tmdb_ids, exclude_ids=(), limit=20):
+    favorites = _clean_ids(tmdb_ids)
+    seeds = favorites[:MAX_SEEDS]   #only these are sent to TMDB
+    skip = set(favorites) | set(_clean_ids(exclude_ids))    #but none of them are ever recommended
+    limit = limit if isinstance(limit, int) and not isinstance(limit, bool) and limit > 0 else 20
+
+    found = {}  # TMDB id => [movie, how many favorites it was recommended for]
+    for seed in seeds:
+        try:
+            data = _get(f"/movie/{seed}/recommendations", {"page": 1})
+        except requests.HTTPError as exc:
+            if exc.response is not None and exc.response.status_code == 404:
+                continue # TMDB doesn't know this movie; the other favorites still count
+            raise
+        
+        results = data.get("results") if isinstance(data, dict) else None
+        counted = set()
+        for movie in results if isinstance(results, list) else []:
+            if not isinstance(movie, dict):
+                continue
+            movie_id = movie.get("id")
+            if isinstance(movie_id, bool) or not isinstance(movie_id, int) or movie_id in skip:
+                continue
+            if movie_id in counted:
+                continue
+            counted.add(movie_id)
+            if movie_id in found:
+                found[movie_id][1] += 1
+            else:
+                found[movie_id] = [movie, 1]
+    ranked = sorted(found.values(), key=lambda pair: (-pair[1], -_number(pair[0].get("vote_average"))))
+    movies = [movie for movie, _ in ranked][:limit]
+    return {"page": 1, "results": movies, "total_results": len(ranked)}
+
+# --- Sprint 3: Viewing Statistics ------------------------------------------
 
 # Count watched movies and determine the user's most-watched genres.
-# Genres are fetched from TMDB because our Movie model does not store them.
+# Genres come from TMDB because our Movie model does not store them.
 def build_viewing_stats(user):
     watched_items = (
         WatchlistItem.objects
-        .filter(
-            user=user,
-            watched=True,
-        )
+        .filter(user=user, watched=True)
         .select_related("movie")
     )
 
@@ -487,71 +275,42 @@ def build_viewing_stats(user):
     for item in watched_items:
         tmdb_id = item.movie.tmdb_id
 
-        # Movies without a TMDB ID still count as watched,
-        # but we cannot look up their genre.
+        # Movies without a TMDB id still count as watched, but have no genre lookup.
         if not tmdb_id:
             continue
 
         try:
-            movie_data = fetch_movie(
-                tmdb_id
-            )
-
-        except (
-            RuntimeError,
-            requests.RequestException,
-        ):
+            movie_data = fetch_movie(tmdb_id)
+        except (RuntimeError, requests.RequestException):
             continue
 
-        genres = movie_data.get(
-            "genres",
-            [],
-        )
-
+        genres = movie_data.get("genres", [])
         if not isinstance(genres, list):
             continue
 
         for genre in genres:
             if not isinstance(genre, dict):
                 continue
-
             name = genre.get("name")
-
             if name:
                 genre_counts[name] += 1
 
-    genre_counts = [
-        {
-            "genre": name,
-            "count": count,
-        }
-        for name, count
-        in genre_counts.most_common()
+    genres = [
+        {"genre": name, "count": count}
+        for name, count in genre_counts.most_common()
     ]
 
     return {
-        "total_watched":
-            watched_items.count(),
-        "genre_counts":
-            genre_counts,
-        "top_genre": (
-            genre_counts[0]["genre"]
-            if genre_counts
-            else None
-        ),
+        "total_watched": watched_items.count(),
+        "genre_counts": genres,
+        "top_genre": genres[0]["genre"] if genres else None,
     }
 
 
-# -------------------------------------------------------------------
-# Sprint 3 - Recommendation history
-# -------------------------------------------------------------------
+# --- Sprint 3: Recommendation History --------------------------------------
 
-# Return the user's highest-rated watched movies.
-# Eleasia can use the TMDB IDs to request similar recommendations.
-def get_highest_rated_history(
-    user,
-    limit=5,
-):
+# Return the user's highest-rated watched movies for recommendation seeds.
+def get_highest_rated_history(user, limit=5):
     items = (
         WatchlistItem.objects
         .filter(
@@ -560,22 +319,16 @@ def get_highest_rated_history(
             personal_rating__isnull=False,
         )
         .select_related("movie")
-        .order_by(
-            "-personal_rating",
-            "-watched_at",
-        )[:limit]
+        .order_by("-personal_rating", "-watched_at")[:limit]
     )
 
     return [
         {
-            "movie_id":
-                item.movie.id,
-            "tmdb_id":
-                item.movie.tmdb_id,
-            "title":
-                item.movie.title,
-            "personal_rating":
-                item.personal_rating,
+            "movie_id": item.movie.id,
+            "tmdb_id": item.movie.tmdb_id,
+            "title": item.movie.title,
+            "personal_rating": item.personal_rating,
         }
         for item in items
     ]
+
