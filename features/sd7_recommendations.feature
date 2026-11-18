@@ -21,7 +21,7 @@ Feature: Personalized Recommendations (User Story SD-7)
     Then the recommendations page should load successfully
     And I should see recommended titles without errors
 
-  Scenario: Recommended for You section appears on the home page
+  Scenario: Recommended for You section appears on the recommendations page
     Given I have watched and rated several titles
     When I open the Home page
     Then I should see a Recommended for You section

@@ -140,7 +140,7 @@ def verify_recommendations_no_errors(context):
         context.test.assertTrue(movie['title'])
         context.test.assertTrue(movie['detail_url'])
 
-# --- Recommended for You section appears on the home page ---
+# --- Recommended for You section appears on the recommendations page ---
 @given('I have watched and rated several titles')
 def create_watched_rated_titles(context):
     context.sd7_rated_movies = [
@@ -160,14 +160,16 @@ def create_watched_rated_titles(context):
 
 @when('I open the Home page')
 def open_home_for_recommendations(context):
-    context.trending_patcher = patch(
-        'movies.views.fetch_trending_movies',
-        return_value={'results': []}
+    context.response = context.test.client.get(
+        reverse('recommendations_page')
     )
-    context.trending_patcher.start()
-    context.add_cleanup(context.trending_patcher.stop)
 
-    context.response = context.test.client.get(reverse('movie_list'))
+    context.test.assertEqual(context.response.status_code, 200)
+
+    context.test.assertContains(
+        context.response,
+        'data-recommendations-url'
+    )
 
 @then('I should see a Recommended for You section')
 def verify_recommended_section(context):
@@ -180,7 +182,27 @@ def verify_recommended_section(context):
 
 @then('the section should contain recommended titles')
 def verify_recommended_section_titles(context):
-    context.test.assertContains(
-        context.response,
-        'SD7 Recommended Movie One'
+    context.tmdb_patcher = patch(
+        'movies.services._get',
+        return_value=mock_recommendations()
+    )
+    context.tmdb_patcher.start()
+    context.add_cleanup(context.tmdb_patcher.stop)
+
+    response = context.test.client.get(
+        reverse('personalized_recommendations')
+    )
+
+    context.test.assertEqual(response.status_code, 200)
+
+    data = response.json()
+
+    context.test.assertTrue(data['has_history'])
+    context.test.assertGreater(len(data['movies']), 0)
+
+    titles = [movie['title'] for movie in data['movies']]
+
+    context.test.assertIn(
+        'SD7 Recommended Movie One',
+        titles
     )
