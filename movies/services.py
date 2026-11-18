@@ -1,6 +1,11 @@
+from collections import Counter
+import math
+
 import requests
 from django.conf import settings
-import math
+from django.core.cache import cache
+
+from .models import WatchlistItem
 
 
 #TMDB identifies genres by number. These are TMDB's movie genre ids.
@@ -254,3 +259,84 @@ def recommended_movies(tmdb_ids, exclude_ids=(), limit=20):
     ranked = sorted(found.values(), key=lambda pair: (-pair[1], -_number(pair[0].get("vote_average"))))
     movies = [movie for movie, _ in ranked][:limit]
     return {"page": 1, "results": movies, "total_results": len(ranked)}
+
+# --- Sprint 3: Viewing Statistics ------------------------------------------
+
+# Count watched movies and determine the user's most-watched genres.
+# Genres come from TMDB because our Movie model does not store them.
+def build_viewing_stats(user):
+    watched_items = (
+        WatchlistItem.objects
+        .filter(user=user, watched=True)
+        .select_related("movie")
+    )
+
+    genre_counts = Counter()
+
+    for item in watched_items:
+        tmdb_id = item.movie.tmdb_id
+
+        # Movies without a TMDB id still count as watched, but have no genre lookup.
+        if not tmdb_id:
+            continue
+
+        cache_key = f"movie_genres_{tmdb_id}"
+        genres = cache.get(cache_key)
+
+        if genres is None:
+            try:
+                movie_data = fetch_movie(tmdb_id)
+            except (RuntimeError, requests.RequestException):
+                continue
+
+            genres = movie_data.get("genres", [])
+            if not isinstance(genres, list):
+                genres = []
+
+            # Cache genre data for 24 hours to avoid repeated TMDB calls.
+            cache.set(cache_key, genres, 60 * 60 * 24)
+
+        for genre in genres:
+            if not isinstance(genre, dict):
+                continue
+            name = genre.get("name")
+            if name:
+                genre_counts[name] += 1
+
+    genres = [
+        {"genre": name, "count": count}
+        for name, count in genre_counts.most_common()
+    ]
+
+    return {
+        "total_watched": watched_items.count(),
+        "genre_counts": genres,
+        "top_genre": genres[0]["genre"] if genres else None,
+    }
+
+
+# --- Sprint 3: Recommendation History --------------------------------------
+
+# Return the user's highest-rated watched movies for recommendation seeds.
+def get_highest_rated_history(user, limit=5):
+    items = (
+        WatchlistItem.objects
+        .filter(
+            user=user,
+            watched=True,
+            personal_rating__isnull=False,
+        )
+        .select_related("movie")
+        .order_by("-personal_rating", "-watched_at")[:limit]
+    )
+
+    return [
+        {
+            "movie_id": item.movie.id,
+            "tmdb_id": item.movie.tmdb_id,
+            "title": item.movie.title,
+            "personal_rating": item.personal_rating,
+        }
+        for item in items
+    ]
+

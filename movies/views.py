@@ -12,8 +12,10 @@ from .services import (
     MAX_PAGE,
     build_movie_context,
     build_search_results,
+    build_viewing_stats,
     fetch_movie,
     fetch_trending_movies,
+    get_highest_rated_history,
     search_movies,
 )
 from .forms import MovieSearchForm
@@ -407,6 +409,39 @@ def update_watchlist_item(request, movie_id):
             'rating': watchlist_item.personal_rating,
         },
         status=200
+    )
+
+
+# --- Sprint 3: Viewing Statistics ------------------------------------------
+
+def viewing_stats(request):
+    if not request.user.is_authenticated:
+        return JsonResponse(
+            {'error': 'Authentication required.'},
+            status=401,
+        )
+
+    if request.method != 'GET':
+        return HttpResponseNotAllowed(['GET'])
+
+    return JsonResponse(build_viewing_stats(request.user), status=200)
+
+
+# --- Sprint 3: Recommendation History --------------------------------------
+
+def recommendation_history(request):
+    if not request.user.is_authenticated:
+        return JsonResponse(
+            {'error': 'Authentication required.'},
+            status=401,
+        )
+
+    if request.method != 'GET':
+        return HttpResponseNotAllowed(['GET'])
+
+    return JsonResponse(
+        {'movies': get_highest_rated_history(request.user)},
+        status=200,
     )
 
 
