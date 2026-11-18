@@ -40,6 +40,20 @@ urlpatterns = [
         name='update_watchlist_item'
     ),
 
+    # Sprint 3: viewing statistics.
+    path(
+        'stats/',
+        views.viewing_stats,
+        name='viewing_stats'
+    ),
+
+    # Sprint 3: highest-rated history for recommendations.
+    path(
+        'recommendations/history/',
+        views.recommendation_history,
+        name='recommendation_history'
+    ),
+
     path(
         'movies/<int:tmdb_id>/',
         views.movie_detail,

@@ -15,6 +15,8 @@ from .services import (
     search_movies,
     fetch_trending_movies,
     recommended_movies,
+    build_viewing_stats,
+    get_highest_rated_history,
 )
 
 
@@ -1668,3 +1670,157 @@ class RecommendedMoviesTest(TestCase):
         mock_get.side_effect = recommendations_by_seed({1: {"results": [FAKE_SEARCH["results"][0]]}})
         cards = build_search_results(recommended_movies([1]))
         self.assertEqual(cards[0]["title"], "Inception")
+
+# --- Sprint 3: D-10 Viewing Statistics ------------------------------------
+
+class ViewingStatsTest(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.user = User.objects.create_user(
+            username="statsuser",
+            password="testpass123",
+        )
+
+        self.movie_one = Movie.objects.create(title="Movie One", tmdb_id=101)
+        self.movie_two = Movie.objects.create(title="Movie Two", tmdb_id=102)
+        self.unwatched_movie = Movie.objects.create(
+            title="Unwatched Movie",
+            tmdb_id=103,
+        )
+
+        # Only watched movies should count toward viewing statistics.
+        WatchlistItem.objects.create(
+            user=self.user,
+            movie=self.movie_one,
+            watched=True,
+            personal_rating=9,
+        )
+        WatchlistItem.objects.create(
+            user=self.user,
+            movie=self.movie_two,
+            watched=True,
+            personal_rating=8,
+        )
+        WatchlistItem.objects.create(
+            user=self.user,
+            movie=self.unwatched_movie,
+            watched=False,
+            personal_rating=10,
+        )
+
+    @patch("movies.services.fetch_movie")
+    def test_build_viewing_stats(self, mock_fetch_movie):
+        # Mock TMDB so this test never uses the real API.
+        mock_fetch_movie.side_effect = [
+            {"genres": [{"name": "Action"}, {"name": "Drama"}]},
+            {"genres": [{"name": "Action"}]},
+        ]
+
+        stats = build_viewing_stats(self.user)
+
+        self.assertEqual(stats["total_watched"], 2)
+        self.assertEqual(stats["top_genre"], "Action")
+        self.assertEqual(
+            stats["genre_counts"],
+            [
+                {"genre": "Action", "count": 2},
+                {"genre": "Drama", "count": 1},
+            ],
+        )
+
+    @patch("movies.views.build_viewing_stats")
+    def test_viewing_stats_endpoint(self, mock_stats):
+        # Check the view separately from the aggregation service.
+        mock_stats.return_value = {
+            "total_watched": 2,
+            "genre_counts": [],
+            "top_genre": "Action",
+        }
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("viewing_stats"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["total_watched"], 2)
+
+    def test_viewing_stats_requires_login(self):
+        response = self.client.get(reverse("viewing_stats"))
+        self.assertEqual(response.status_code, 401)
+
+
+# --- Sprint 3: D-7 Personalized Recommendation History --------------------
+
+class RecommendationHistoryTest(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.user = User.objects.create_user(
+            username="recommenduser",
+            password="testpass123",
+        )
+
+        self.high_movie = Movie.objects.create(
+            title="Highly Rated Movie",
+            tmdb_id=201,
+        )
+        self.medium_movie = Movie.objects.create(
+            title="Medium Rated Movie",
+            tmdb_id=202,
+        )
+        self.low_movie = Movie.objects.create(
+            title="Low Rated Movie",
+            tmdb_id=203,
+        )
+        self.unwatched_movie = Movie.objects.create(
+            title="Unwatched Movie",
+            tmdb_id=204,
+        )
+
+        # Only watched and rated movies should be returned.
+        WatchlistItem.objects.create(
+            user=self.user,
+            movie=self.high_movie,
+            watched=True,
+            personal_rating=10,
+        )
+        WatchlistItem.objects.create(
+            user=self.user,
+            movie=self.medium_movie,
+            watched=True,
+            personal_rating=8,
+        )
+        WatchlistItem.objects.create(
+            user=self.user,
+            movie=self.low_movie,
+            watched=True,
+            personal_rating=6,
+        )
+        WatchlistItem.objects.create(
+            user=self.user,
+            movie=self.unwatched_movie,
+            watched=False,
+            personal_rating=10,
+        )
+
+    def test_highest_rated_history(self):
+        movies = get_highest_rated_history(self.user)
+
+        self.assertEqual(len(movies), 3)
+        self.assertEqual(movies[0]["title"], "Highly Rated Movie")
+        self.assertEqual(
+            [movie["personal_rating"] for movie in movies],
+            [10, 8, 6],
+        )
+
+    def test_recommendation_history_endpoint(self):
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("recommendation_history"))
+
+        self.assertEqual(response.status_code, 200)
+        movies = response.json()["movies"]
+        self.assertEqual(len(movies), 3)
+        self.assertEqual(movies[0]["tmdb_id"], 201)
+
+    def test_recommendation_history_requires_login(self):
+        response = self.client.get(reverse("recommendation_history"))
+        self.assertEqual(response.status_code, 401)
+
