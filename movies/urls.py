@@ -65,4 +65,10 @@ urlpatterns = [
         views.movie_detail,
         name='movie_detail'
     ),
+
+    path(
+        'recommendations/browse/',
+        views.recommendations_page,
+        name='recommendations_page',
+    ),
 ]

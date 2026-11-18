@@ -27,6 +27,7 @@
 
                 {% if user.is_authenticated %}
                     <a href="{% url 'home' %}">My Watchlist</a>
+                    <a href="{% url 'recommendations_page' %}">Recommendations</a>
 
                     <form method="post" action="{% url 'logout' %}">
                         {% csrf_token %}

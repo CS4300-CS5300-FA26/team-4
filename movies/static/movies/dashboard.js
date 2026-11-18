@@ -2,7 +2,7 @@
     const profile = document.querySelector("#profile");
     const recommendations = document.querySelector("#recommendations");
 
-    if (!profile || !recommendations) {
+    if (!profile && !recommendations) {
         return;
     }
 
@@ -31,6 +31,10 @@
     }
 
     function sectionLoader(section, url, render, clear) {
+        if (!section) {
+            return () => {};
+        }
+
         let controller;
 
         const status = section.querySelector(".dashboard-status");
@@ -87,12 +91,13 @@
         return load;
     }
 
-        const statsContent = profile.querySelector(".stats-content");
-    const chart = profile.querySelector(".genre-chart");
+    const statsContent = profile?.querySelector(".stats-content");
+    const chart = profile?.querySelector(".genre-chart");
+
 
     const loadStats = sectionLoader(
         profile,
-        profile.dataset.statsUrl,
+        profile?.dataset.statsUrl,
         (data) => {
             profile.querySelectorAll("[data-stat]").forEach((element) => {
                 element.textContent = data[element.dataset.stat];
@@ -136,11 +141,11 @@
         }
     );
 
-        const grid = recommendations.querySelector(".recommendation-grid");
+    const grid = recommendations?.querySelector(".recommendation-grid");
 
     const loadRecommendations = sectionLoader(
         recommendations,
-        recommendations.dataset.recommendationsUrl,
+        recommendations?.dataset.recommendationsUrl,
         (data, status) => {
             if (!data.movies.length) {
                 status.textContent = data.has_history
@@ -196,7 +201,7 @@
         }
     );
 
-        grid.addEventListener("submit", async (event) => {
+        grid?.addEventListener("submit", async (event) => {
         const form = event.target.closest(".recommendation-add-form");
 
         if (!form) {
