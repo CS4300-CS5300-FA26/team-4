@@ -340,6 +340,7 @@ button:disabled {
 }
 
 .watchlist img {
+    flex-shrink: 0;
     width: 60px;
     height: 90px;
     object-fit: contain;
@@ -349,6 +350,7 @@ button:disabled {
 
 .watchlist li > div {
     min-width: 0;
+    flex: 1;
 }
 
 .watchlist a {
@@ -357,6 +359,159 @@ button:disabled {
 
 .watchlist .year {
     margin: 0.3rem 0 0;
+}
+
+/* Watched switch and personal rating */
+.watchlist-update-form {
+    margin-top: 1rem;
+}
+
+.watchlist-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1.25rem;
+}
+
+.watched-toggle {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-height: 44px;
+    color: var(--muted);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+/* Keep the checkbox accessible while showing a custom switch. */
+.watched-toggle input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    opacity: 0;
+}
+
+.toggle-track {
+    display: inline-flex;
+    align-items: center;
+    width: 42px;
+    height: 24px;
+    padding: 3px;
+    border: 1px solid #8b8da1;
+    border-radius: 999px;
+    background: #e7e7ef;
+}
+
+/* White knob inside the switch. */
+.toggle-track::before {
+    content: "";
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: white;
+    box-shadow: 0 1px 3px rgb(32 33 57 / 20%);
+}
+
+.watched-toggle input:checked + .toggle-track {
+    border-color: var(--accent);
+    background: var(--accent);
+}
+
+.watched-toggle input:checked + .toggle-track::before {
+    transform: translateX(18px);
+}
+
+.watched-toggle input:checked ~ span:last-child {
+    color: var(--accent);
+}
+
+.watched-toggle input:focus-visible + .toggle-track {
+    outline: 3px solid #9778ef;
+    outline-offset: 4px;
+}
+
+.personal-rating {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.9rem;
+}
+
+.personal-rating label {
+    color: var(--muted);
+    font-weight: 600;
+}
+
+.rating-input {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    min-height: 44px;
+    padding: 0.35rem 0.65rem;
+    border: 1px solid #b8bacb;
+    border-radius: 10px;
+    background: #faf9fe;
+}
+
+.rating-input:focus-within {
+    border-color: var(--accent);
+}
+
+.rating-star {
+    color: var(--accent);
+}
+
+.rating-input input {
+    width: 3.5rem;
+    min-width: 0;
+    padding: 0.15rem;
+    border: 0;
+    background: transparent;
+    color: var(--text);
+    font-weight: 650;
+    text-align: center;
+}
+
+.rating-scale {
+    color: var(--muted);
+    white-space: nowrap;
+}
+
+.watchlist-save {
+    min-height: 44px;
+    padding: 0.45rem 1rem;
+    font-size: 0.9rem;
+}
+
+.watchlist-remove {
+    padding: 0.35rem 0.75rem;
+    margin-top: 0.5rem;
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.watchlist-remove:hover {
+    background: #fff1f3;
+    color: #a32942;
+    border-color: #a32942;
+}
+
+.update-message {
+    margin: 0.5rem 0 0;
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.update-message:empty {
+    margin: 0;
 }
 
 /* Footer and notifications */

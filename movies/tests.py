@@ -107,25 +107,109 @@ def fake_response(data=None, status=200):
 
 
 class MovieListViewTest(TestCase):
-    def test_saved_movie_appears_on_the_page(self):
-        Movie.objects.create(
-            title="Inception",
-            overview="A heist in dreams."
-        )
-
+    @patch(
+        "movies.views.fetch_trending_movies",
+        return_value=FAKE_SEARCH,
+    )
+    def test_homepage_shows_trending_movies(self, mock_trending):
         response = self.client.get(reverse("movie_list"))
 
         self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "movies/movie_list.html")
         self.assertContains(response, "Inception")
-        self.assertContains(response, "A heist in dreams.")
+        self.assertEqual(len(response.context["movies"]), 3)
 
-    def test_empty_state_shown_when_no_movies_exist(self):
+        # Browsing trending movies should not save them.
+        self.assertEqual(Movie.objects.count(), 0)
+
+        # Anonymous visitors have no saved movies.
+        self.assertFalse(
+            response.context["movies"][0]["in_watchlist"]
+        )
+
+        mock_trending.assert_called_once_with()
+
+    @patch(
+        "movies.views.fetch_trending_movies",
+        return_value={"results": []},
+    )
+    def test_empty_trending_results(self, mock_trending):
         response = self.client.get(reverse("movie_list"))
 
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "No trending movies found")
+
+    @patch(
+        "movies.views.fetch_trending_movies",
+        side_effect=RuntimeError,
+    )
+    def test_missing_api_key_shows_error(self, mock_trending):
+        response = self.client.get(reverse("movie_list"))
+
+        self.assertEqual(response.status_code, 503)
         self.assertContains(
             response,
-            "No movies in the database yet"
+            "Trending movies are unavailable right now.",
+            status_code=503,
         )
+
+    @patch(
+        "movies.views.fetch_trending_movies",
+        side_effect=requests.Timeout,
+    )
+    def test_tmdb_failure_shows_error(self, mock_trending):
+        response = self.client.get(reverse("movie_list"))
+
+        self.assertEqual(response.status_code, 502)
+        self.assertContains(
+            response,
+            "Trending movies are unavailable",
+            status_code=502,
+        )
+
+    @patch(
+        "movies.views.fetch_trending_movies",
+        return_value=FAKE_SEARCH,
+    )
+    def test_only_current_users_saved_movies_are_marked(
+        self, mock_trending
+    ):
+        User = get_user_model()
+        user = User.objects.create_user(username="katie")
+        other_user = User.objects.create_user(username="other")
+
+        saved_movie = Movie.objects.create(
+            title="Inception",
+            tmdb_id=27205,
+        )
+        other_movie = Movie.objects.create(
+            title="Inception Rip-off",
+            tmdb_id=1,
+        )
+
+        WatchlistItem.objects.create(
+            user=user,
+            movie=saved_movie,
+        )
+        WatchlistItem.objects.create(
+            user=other_user,
+            movie=other_movie,
+        )
+
+        self.client.force_login(user)
+        response = self.client.get(reverse("movie_list"))
+
+        self.assertEqual(response.status_code, 200)
+
+        saved_flags = {
+            movie["tmdb_id"]: movie["in_watchlist"]
+            for movie in response.context["movies"]
+        }
+
+        self.assertTrue(saved_flags[27205])
+        self.assertFalse(saved_flags[1])
+        self.assertFalse(saved_flags[2])
+        self.assertContains(response, "Added to Watchlist")
 
 
 class WatchlistTest(TestCase):

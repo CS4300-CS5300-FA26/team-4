@@ -1,21 +1,27 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Browse Movies | Personal Movie Watch List{% endblock %}
 
 {% block content %}
     <section class="page-intro">
-        <p class="eyebrow">Find your next favorite</p>
+        <p class="eyebrow">Trending this week</p>
 
         <h1>A good night starts with a great movie.</h1>
 
         <p>
-            Explore the collection, discover the details, and save
+            Discover this week's trending movies and save
             something for your next movie night.
         </p>
     </section>
 
-    {% if movies %}
-        <section class="movie-grid" aria-label="Movies">
+    {% if error %}
+        <section class="error-message" role="alert">
+            <h2>Trending movies are unavailable</h2>
+            <p>{{ error }}</p>
+        </section>
+    {% elif movies %}
+        <section class="movie-grid" aria-label="Trending movies">
             {% for movie in movies %}
                 <article class="movie">
                     {% if movie.poster_url %}
@@ -52,17 +58,60 @@
                         {% if movie.overview %}
                             <p class="overview">{{ movie.overview }}</p>
                         {% endif %}
+
+                        {% if user.is_authenticated %}
+                            <form
+                                class="watchlist-add-form"
+                                method="post"
+                                action="{% url 'add_search_movie_to_watchlist' movie.tmdb_id %}"
+                                data-login-url="{% url 'login' %}"
+                            >
+                                {% csrf_token %}
+
+                                <span
+                                    class="watchlist-button-wrapper"
+                                    {% if movie.in_watchlist %}
+                                        title="Already saved to your watchlist"
+                                    {% endif %}
+                                >
+                                    <button
+                                        type="submit"
+                                        {% if movie.in_watchlist %}
+                                            disabled
+                                            aria-label="Added to Watchlist — already saved"
+                                        {% endif %}
+                                    >
+                                        {% if movie.in_watchlist %}
+                                            Added to Watchlist
+                                        {% else %}
+                                            Add to Watchlist
+                                        {% endif %}
+                                    </button>
+                                </span>
+
+                                <p
+                                    class="watchlist-message"
+                                    role="status"
+                                    aria-live="polite"
+                                ></p>
+                            </form>
+                        {% else %}
+                            <a href="{% url 'login' %}?next={{ request.get_full_path|urlencode }}">
+                                Log in to add to your watchlist
+                            </a>
+                        {% endif %}
                     </div>
                 </article>
             {% endfor %}
         </section>
     {% else %}
         <section class="empty">
-            <h2>The collection is on its way</h2>
-            <p>
-                No movies in the database yet.
-                Check back soon for something to watch.
-            </p>
+            <h2>No trending movies found</h2>
+            <p>Check back soon for more movie inspiration.</p>
         </section>
     {% endif %}
+{% endblock %}
+
+{% block scripts %}
+    <script src="{% static 'movies/watchlist.js' %}"></script>
 {% endblock %}
